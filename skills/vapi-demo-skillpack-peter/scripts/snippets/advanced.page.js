@@ -283,7 +283,8 @@ function advRender(d) {
   advRow(sb, 'Simulator voice', sv ? sv.name + ' · ' + sv.provider + (sv.model ? ' · ' + sv.model : '') : 'Vapi default (no simulation run yet)');
   if (sv?.description) sb.appendChild(advEl('div', 'adv-sub', sv.description));
   // Agent settings, condensed to text (same live data as the Config setup panel).
-  sb.appendChild(advEl('div', 'prompt-k adv-k', 'Agent settings'));
+  const agentHdr = advEl('div', 'prompt-k adv-k', 'Agent settings');
+  sb.appendChild(agentHdr);
   const cfgBox = advEl('div', 'adv-cfg');
   const cfgLines = advAgentSettings(typeof agentCfg !== 'undefined' ? agentCfg : null);
   if (!cfgLines.length) cfgBox.textContent = 'Loading…';
@@ -318,7 +319,8 @@ function advRender(d) {
     chip.addEventListener('click', () => { advPersonaOpen = advPersonaOpen === p ? null : p; pShow(); });
     chips.appendChild(chip);
   }
-  if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); sb.appendChild(pBox); pShow(); }
+  // Part of Simulator Settings: placed under the simulator voice, above Agent settings.
+  if ((sim.personalities ?? []).length) { for (const el of [advEl('div', 'prompt-k adv-k', 'Tester personalities'), chips, pBox]) sb.insertBefore(el, agentHdr); pShow(); }
   for (const su of simSuites) {
     suiteBlock(sb, su, 'Suite · ' + su.name + ' · voice', {
       title: (sm) => sm.name,
