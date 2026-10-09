@@ -14,6 +14,7 @@ Spec (JSON):
      "personality": "Confused Carl",                                  # a built-in tester personality
      "checks": [{"name": "snake_case_name", "description": "true if ..."}]}  # boolean, must be true
   ],
+  "maxDurationSeconds": 60,                                         # optional; Vapi ends each simulated call at this length
   "evals": [
     {"name": "...", "description": "...",
      "turns": ["user message", ...],                                  # user lines; the agent replies after the last
@@ -65,14 +66,21 @@ def main():
     evals = {e.get('name'): e['id'] for e in listing('/eval')}
     created = {'scenarios': [], 'simulations': [], 'suite': None, 'evals': []}
 
+    # Every simulation is capped at maxDurationSeconds (default 60): Vapi ends the
+    # simulated call itself via the scenario's targetOverrides.maxDurationSeconds.
+    max_seconds = int(spec.get('maxDurationSeconds', 60))
+    overrides = {'maxDurationSeconds': max_seconds}
     sim_ids = []
     for sc in spec['scenarios']:
+        instructions = sc['instructions']
         if sc['name'] in scenarios:
             sid = scenarios[sc['name']]
+            call('PATCH', f'/eval/simulation/scenario/{sid}', {'instructions': instructions, 'targetOverrides': overrides})
         else:
             sid = call('POST', '/eval/simulation/scenario', {
                 'name': sc['name'],
-                'instructions': sc['instructions'],
+                'instructions': instructions,
+                'targetOverrides': overrides,
                 'evaluations': [{
                     'structuredOutput': {'name': c['name'], 'type': 'ai',
                                          'schema': {'type': 'boolean', 'description': c['description']}},

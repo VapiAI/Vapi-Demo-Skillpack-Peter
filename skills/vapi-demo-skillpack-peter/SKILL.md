@@ -212,6 +212,11 @@ this file wins** — these are Peter's explicit corrections.
   an LLM-judge criterion — cover the core happy path, a self-service
   redirect, PII refusal, a hardship/escalation path, and hours) and run
   `VAPI_API_KEY=... python3 scripts/seed-tests.py <spec> <assistantId> <out>`.
+  **Every simulation is capped at 1 minute** (Peter's ask): `seed-tests.py`
+  sets each scenario's `targetOverrides.maxDurationSeconds: 60` (spec
+  `maxDurationSeconds`; re-running PATCHes existing scenarios), so Vapi ends
+  the simulated call itself. The Simulations API has no max-turns field; don't
+  cap by turns or end calls from the demo server.
   It only CREATES definitions (idempotent by name); never start a simulation
   or eval run without asking — runs cost money and place AI test calls.
   Python urllib needs a User-Agent header or Cloudflare returns 403 / 1010.
