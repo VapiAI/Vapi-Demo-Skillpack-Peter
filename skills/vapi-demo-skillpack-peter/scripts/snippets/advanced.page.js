@@ -242,10 +242,10 @@ function advRender(d) {
   };
 
   // 1. Simulations (voice)
-  const [simCard, sb] = advCard('Simulations', 'AI callers with different personalities phone this agent (voice) and score the result.');
-  advRow(sb, 'Scenarios', String(simSuites.reduce((n, su) => n + su.simulations.length, 0)));
-  // Settings: what the AI caller sounds like (read from the latest simulation).
-  sb.appendChild(advEl('div', 'prompt-k adv-k', 'Settings'));
+  const [simCard, sb] = advCard('Simulations');
+  // Simulator Settings (top of the card): what the AI caller sounds like, read
+  // from the latest simulation.
+  sb.appendChild(advEl('div', 'prompt-k adv-k adv-k-first', 'Simulator Settings'));
   const sv = sim.simulatorVoice;
   advRow(sb, 'Simulator voice', sv ? sv.name + ' · ' + sv.provider + (sv.model ? ' · ' + sv.model : '') : 'Vapi default (no simulation run yet)');
   if (sv?.description) sb.appendChild(advEl('div', 'adv-sub', sv.description));
@@ -261,6 +261,7 @@ function advRender(d) {
     cfgBox.appendChild(line);
   }
   sb.appendChild(cfgBox);
+  advRow(sb, 'Scenarios', String(simSuites.reduce((n, su) => n + su.simulations.length, 0)));
   const chips = advEl('div', 'adv-chips');
   for (const p of sim.personalities ?? []) chips.appendChild(advEl('span', 'adv-chip', p));
   if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); }

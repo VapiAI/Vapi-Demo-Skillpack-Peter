@@ -238,7 +238,7 @@ this file wins** — these are Peter's explicit corrections.
   a section shows on one machine but not another, test the class in the real
   browser: `getComputedStyle(el).display` is `none` with no matching page
   rule → an extension stylesheet.
-- **Simulations card "Settings · Simulator voice"** (Peter's ask): the AI
+- **Simulations card starts with "Simulator Settings"** (no description line; Peter's ask): the AI
   caller's voice name · provider · version + description, read from the latest
   tester-side call (`metadata.role: "tester"`; built-in personalities set no
   voice — Vapi used "Elliot · Vapi · v2"). Below it, **"Agent settings"**: the
