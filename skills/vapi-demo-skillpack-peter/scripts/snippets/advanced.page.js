@@ -108,6 +108,25 @@ function advBadge(passed) {
 }
 function advWhen(iso) { return iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; }
 
+// Condensed agent settings for the Simulations card: [label, text] lines.
+function advAgentSettings(cfg) {
+  if (!cfg) return [];
+  const j = (...xs) => xs.filter((x) => x != null && x !== '').join(' · ');
+  const v = cfg.voice ?? {};
+  const out = [
+    ['LLM', j(cfg.llm?.provider, cfg.llm?.model)],
+    ['Transcriber', j(cfg.transcriber?.provider, cfg.transcriber?.model, cfg.transcriber?.language)],
+    ['Voice', j(v.name || (v.voice ? 'Voice ' + v.voice : null), v.provider, v.model)],
+  ];
+  const sp = cfg.stopSpeaking;
+  if (sp) out.push(['Stop speaking', j('Words ' + sp.numWords, 'Voice ' + sp.voiceSeconds + 's', 'Back off ' + sp.backoffSeconds + 's')
+    + (sp.isDefault && Object.values(sp.isDefault).every(Boolean) ? ' · defaults' : '')]);
+  const ss = cfg.startSpeaking;
+  if (ss) out.push(['Start speaking', j('Wait ' + ss.waitSeconds + 's', 'Smart endpointing ' + ss.smartEndpointing, 'Punctuation ' + ss.onPunctuationSeconds + 's',
+    'No punctuation ' + ss.onNoPunctuationSeconds + 's', 'Number ' + ss.onNumberSeconds + 's') + (ss.allDefault ? ' · defaults' : '')]);
+  return out.filter(([, t]) => t);
+}
+
 function advRender(d) {
   const grid = $('advGrid');
   grid.innerHTML = '';
@@ -230,6 +249,18 @@ function advRender(d) {
   const sv = sim.simulatorVoice;
   advRow(sb, 'Simulator voice', sv ? sv.name + ' · ' + sv.provider + (sv.model ? ' · ' + sv.model : '') : 'Vapi default (no simulation run yet)');
   if (sv?.description) sb.appendChild(advEl('div', 'adv-sub', sv.description));
+  // Agent settings, condensed to text (same live data as the Config setup panel).
+  sb.appendChild(advEl('div', 'prompt-k adv-k', 'Agent settings'));
+  const cfgBox = advEl('div', 'adv-cfg');
+  const cfgLines = advAgentSettings(typeof agentCfg !== 'undefined' ? agentCfg : null);
+  if (!cfgLines.length) cfgBox.textContent = 'Loading…';
+  for (const [k, v] of cfgLines) {
+    const line = advEl('div');
+    line.appendChild(advEl('b', null, k + ' '));
+    line.appendChild(document.createTextNode(v));
+    cfgBox.appendChild(line);
+  }
+  sb.appendChild(cfgBox);
   const chips = advEl('div', 'adv-chips');
   for (const p of sim.personalities ?? []) chips.appendChild(advEl('span', 'adv-chip', p));
   if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); }

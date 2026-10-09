@@ -266,7 +266,9 @@ agentPromptShow();
 
 // Middle panel: which LLM, transcriber and voice the agent runs on. One
 // compact row each so it fits above the tool calls panel on a laptop screen.
+let agentCfg = null; // latest agent config, also shown condensed on the Simulations card
 function configRender(cfg) {
+  agentCfg = cfg;
   panelReady('config');
   const box = $('config');
   box.innerHTML = '';
