@@ -147,6 +147,13 @@ export function startManualLookup(args, call, toolCallId, emitEvent) {
   const started = Date.now();
   const query = String(args.query ?? '').trim();
   const model = String(args.model ?? '').trim();
+  // No live call (Evals API chat runs, or a direct POST): nothing to push a
+  // background result into, so answer synchronously with the passages.
+  if (!call?.id) {
+    const { manual, hits } = search(query, model);
+    return { status: 'results', searched: manual ? manual + ' + FAQ' : 'FAQ only',
+      results: hits.length ? hits.map((h) => ({ source: h.source, section: h.section, text: h.text })) : 'No matching passage. Do not guess; offer to open a case.' };
+  }
   (async () => {
     const t0 = performance.now();
     const { manual, scanned, hits } = search(query, model);

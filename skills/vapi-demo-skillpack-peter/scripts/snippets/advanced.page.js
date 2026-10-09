@@ -136,12 +136,11 @@ function advRender(d) {
   clearInterval(advTimer);
   advTimer = setInterval(advLoad, anyActive ? 5000 : 30000);
 
-  // Suites whose name contains "· evaluations" are the VOICE evaluations
-  // (scripted caller line + pass criterion, run as voice simulations);
-  // everything else is the scenario/personality simulation suite.
-  const isEvalSuite = (su) => /·\s*evaluations/i.test(su.name);
-  const simSuites = (sim.suites ?? []).filter((su) => !isEvalSuite(su));
-  const evalSuites = (sim.suites ?? []).filter(isEvalSuite);
+  // Simulations card = Simulations API only (/eval/simulation*). Evaluations
+  // card = Evals API only (/eval, /eval/run). Legacy "· evaluations" suites
+  // (evals once run as voice simulations) are not shown anywhere.
+  const isLegacyEvalSuite = (su) => /·\s*evaluations/i.test(su.name);
+  const simSuites = (sim.suites ?? []).filter((su) => !isLegacyEvalSuite(su));
   const idsOf = (suites) => new Set(suites.flatMap((su) => su.simulations.map((x) => x.id)));
 
   function suiteBlock(box, su, label, detailFor) {
@@ -224,48 +223,33 @@ function advRender(d) {
   runsBlock(sb, idsOf(simSuites), 'No simulation runs for this agent yet.');
   grid.appendChild(simCard);
 
-  // 2. Evaluations (voice): a caller says one scripted line; the spoken reply is judged.
-  const [evCard, eb] = advCard('Evaluations', 'Voice checks: an AI caller phones the agent, says a scripted line, and the spoken reply is judged against a pass criterion.');
-  if (evalSuites.length) {
-    advRow(eb, 'Evaluations', String(evalSuites.reduce((n, su) => n + su.simulations.length, 0)));
-    for (const su of evalSuites) {
-      suiteBlock(eb, su, 'Suite · ' + su.name.replace(/\s*·\s*evaluations.*$/i, '') + ' · voice', {
-        title: (sm) => (sm.scenario ?? sm.name).replace(/^Eval · /, ''),
-        fill: (d, sm) => {
-          const said = (sm.instructions ?? '').match(/say exactly:\s*"([^"]+)"/i);
-          if (said) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says')); d.appendChild(advEl('div', 'adv-quote', '“' + said[1] + '”')); }
-          d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when'));
-          for (const c of sm.checks) d.appendChild(advEl('div', 'adv-quote', (c.description ?? c.name).replace(/^True only if:\s*/i, '')));
-        },
-      });
-    }
-    runsBlock(eb, idsOf(evalSuites), 'No evaluation runs for this agent yet.');
-  } else {
-    // Fallback: chat evals (Vapi's chat.mockConversation) when no voice eval suite exists.
-    advRow(eb, 'Eval definitions (chat)', String((ev.definitions ?? []).length));
-    for (const e of ev.definitions ?? []) {
-      eb.appendChild(advExpandable('eval:' + e.id, e.name, (d) => {
-        if (e.description) d.appendChild(advEl('div', 'adv-sub', e.description));
-        if ((e.turns ?? []).length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says'));
-        for (const t of e.turns ?? []) d.appendChild(advEl('div', 'adv-quote', '“' + t + '”'));
-        if (e.criterion) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when')); d.appendChild(advEl('div', 'adv-quote', e.criterion)); }
-      }, { kind: 'eval', id: e.id }, evalState[e.id]));
-    }
-    eb.appendChild(advEl('div', 'prompt-k adv-k', 'Recent eval runs'));
-    if (!(ev.runs ?? []).length) advEmpty(eb, 'No eval runs for this agent yet.');
-    for (const r of ev.runs ?? []) {
-      const pass = r.results.length ? r.results.every((x) => x === 'pass') : null;
-      const it = advEl('div', 'adv-item');
-      const top = advEl('div', 'adv-item-top');
-      top.appendChild(advBadge(pass));
-      top.appendChild(advEl('span', 'adv-item-n', (r.name ?? (ev.definitions ?? []).find((x) => x.id === r.evalId)?.name ?? 'Eval run') + ' · ' + advWhen(r.createdAt)));
-      const v = advEl('span', 'adv-run-btn', '▶ View');
-      v.addEventListener('click', () => openEvalViewer(r.id));
-      top.appendChild(v);
-      it.appendChild(top);
-      it.appendChild(advEl('div', 'adv-sub', r.status + (r.endedReason ? ' · ' + r.endedReason : '') + (r.cost != null ? ' · $' + Number(r.cost).toFixed(4) : '')));
-      eb.appendChild(it);
-    }
+  // 2. Evaluations: Vapi Evals API only. Definitions from GET /eval, runs from
+  // GET /eval/run, started with POST /eval/run — never a simulation.
+  const [evCard, eb] = advCard('Evaluations', 'Vapi Evals API: a scripted conversation is sent to the agent and an LLM judge scores its reply against a pass criterion. Click an eval to run it.');
+  advRow(eb, 'Evaluations', String((ev.definitions ?? []).length));
+  if (!(ev.definitions ?? []).length) advEmpty(eb, 'No evaluations defined yet.');
+  for (const e of ev.definitions ?? []) {
+    eb.appendChild(advExpandable('eval:' + e.id, e.name, (d) => {
+      if (e.description) d.appendChild(advEl('div', 'adv-sub', e.description));
+      if ((e.turns ?? []).length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says'));
+      for (const t of e.turns ?? []) d.appendChild(advEl('div', 'adv-quote', '“' + t + '”'));
+      if (e.criterion) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when')); d.appendChild(advEl('div', 'adv-quote', e.criterion)); }
+    }, { kind: 'eval', id: e.id }, evalState[e.id]));
+  }
+  eb.appendChild(advEl('div', 'prompt-k adv-k', 'Recent eval runs'));
+  if (!(ev.runs ?? []).length) advEmpty(eb, 'No eval runs for this agent yet.');
+  for (const r of ev.runs ?? []) {
+    const pass = r.results.length ? r.results.every((x) => x === 'pass') : null;
+    const it = advEl('div', 'adv-item');
+    const top = advEl('div', 'adv-item-top');
+    top.appendChild(advBadge(pass));
+    top.appendChild(advEl('span', 'adv-item-n', (r.name ?? (ev.definitions ?? []).find((x) => x.id === r.evalId)?.name ?? 'Eval run') + ' · ' + advWhen(r.createdAt)));
+    const v = advEl('span', 'adv-run-btn', '▶ View');
+    v.addEventListener('click', () => openEvalViewer(r.id));
+    top.appendChild(v);
+    it.appendChild(top);
+    it.appendChild(advEl('div', 'adv-sub', r.status + (r.endedReason ? ' · ' + r.endedReason : '') + (r.cost != null ? ' · $' + Number(r.cost).toFixed(4) : '')));
+    eb.appendChild(it);
   }
   grid.appendChild(evCard);
 

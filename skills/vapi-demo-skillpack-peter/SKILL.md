@@ -178,14 +178,15 @@ this file wins** — these are Peter's explicit corrections.
   expands details (AI-caller instructions + pass checks / scripted turns +
   judge criterion). Simulations run as **VOICE** by default
   (`transport: {provider: 'vapi.websocket'}`, never webchat). **Evaluations
-  are VOICE too** (Peter's ask): Vapi evals are chat-only
-  (`chat.mockConversation`), so `seed-tests.py` (default `evalMode: voice`)
-  turns each eval into a voice simulation — scenario "Eval · <name>", an AI
-  caller (Decisive Derek) says the scripted line exactly, one boolean check
-  "True only if: <judge criterion>" (output name ≤ 40 chars) — in a suite
-  named "<suiteName> · evaluations". The Evaluations card renders that suite
-  (run on click, PASS/FAIL, call viewer with audio); chat evals are only a
-  fallback when no eval suite exists. Each card lists only its own runs. Server only accepts ids in this
+  run ONLY through the Evals API; simulations ONLY through the Simulations
+  API — never mix them** (Peter's correction; an earlier rule turned evals
+  into voice simulations in a "· evaluations" suite — don't). `seed-tests.py`
+  creates evals with `POST /eval` (`chat.mockConversation` + LLM-judge) and
+  the card runs them with `POST /eval/run`, showing definitions from
+  `GET /eval` and runs from `GET /eval/run` (PASS/FAIL, eval viewer). Legacy
+  "· evaluations" simulation suites are hidden. Evals are text chats with no
+  live call, so any background-lookup tool must answer synchronously when
+  there is no `call.id` (the template does). Each card lists only its own runs. Server only accepts ids in this
   agent's suite / org evals, 60s cooldown per item, 20 runs/hour (the page is
   public). Status pill: Starting… → queued/running… → PASS·view / FAIL·view,
   polling every 5s while anything is active.
