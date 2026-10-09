@@ -120,6 +120,13 @@ this file wins** — these are Peter's explicit corrections.
   agent's suite / org evals, 60s cooldown per item, 20 runs/hour (the page is
   public). Status pill: Starting… → queued/running… → PASS·view / FAIL·view,
   polling every 5s while anything is active.
+- **Live board, last call and Logs show REAL calls only.** Simulation runs
+  call the same assistant (its server.url), so their webhooks would land on
+  the live board. `isTestCall()` flags `metadata.isSimulation:"true"` /
+  `simulationRunId` / type `vapi.websocketCall`; the /vapi handler drops
+  those webhooks, and /last-call + /logs skip them (fetch 50–100, keep real).
+  Evals are chat mocks and never create calls. Test calls stay viewable from
+  the Advanced tab's call viewer.
 - **Call viewer (Vapi-dashboard style)** opens automatically when a run
   started from the page finishes, and from any PASS/FAIL pill or "▶ View":
   header (date + TZ, type, call id copy, agent id, ended reason, duration,

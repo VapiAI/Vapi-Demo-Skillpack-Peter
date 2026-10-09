@@ -27,7 +27,8 @@ async function logsHandler(req, res) {
     if (logsCache && Date.now() - logsCache.at < 10000) return send(200, logsCache.body);
     const so = await get('/structured-output?limit=100').catch(() => ({}));
     const soName = Object.fromEntries((so.results ?? so ?? []).map?.((s) => [s.id, s.name]) ?? []);
-    const calls = await get(`/call?assistantId=${aid}&limit=25`);
+    // Real calls only: simulation runs hit this assistant too (see isTestCall).
+    const calls = (await get(`/call?assistantId=${aid}&limit=100`) ?? []).filter((c) => !isTestCall(c)).slice(0, 25);
     const body = {
       calls: (calls ?? []).map((c) => {
         const msgs = asArray(c.artifact?.messages, c.messages);

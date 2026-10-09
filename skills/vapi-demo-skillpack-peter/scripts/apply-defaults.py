@@ -88,10 +88,10 @@ async function lastCallHandler(res) {
   if (!key || !process.env.ASSISTANT_ID) return send(503, { error: 'not configured' });
   if (buffer.length) return send(200, { buffered: true });
   try {
-    const r = await fetch(`https://api.vapi.ai/call?assistantId=${process.env.ASSISTANT_ID}&limit=1`, {
+    const r = await fetch(`https://api.vapi.ai/call?assistantId=${process.env.ASSISTANT_ID}&limit=50`, {
       headers: { authorization: `Bearer ${key}` },
     });
-    const [call] = await r.json();
+    const call = ([].concat(await r.json() ?? [])).find((c) => !isTestCall(c)); // real calls only
     if (!call) return send(200, { call: null });
     const messages = [call.artifact?.messages, call.messages].find(Array.isArray) ?? [];
     const tools = [];
@@ -640,7 +640,7 @@ def main():
     page.save()
 
     srv = Doc(srv.path)
-    srv.rep('\n// ---- Static + routing', snip('history-turns.server.js') + snip('call-stats.server.js') + snip('advanced.server.js') + snip('logs.server.js') + snip('call-viewer.server.js') + '\n// ---- Static + routing')
+    srv.rep('\n// ---- Static + routing', snip('real-calls.server.js') + snip('history-turns.server.js') + snip('call-stats.server.js') + snip('advanced.server.js') + snip('logs.server.js') + snip('call-viewer.server.js') + '\n// ---- Static + routing')
     srv.rep("  if (req.method === 'GET' && req.url === '/last-call') return lastCallHandler(res);",
             "  if (req.method === 'GET' && req.url === '/last-call') return lastCallHandler(res);\n"
             "  if (req.method === 'GET' && req.url.startsWith('/call-stats?')) return callStatsHandler(req, res);\n"
@@ -648,6 +648,14 @@ def main():
             "  if (req.method === 'POST' && req.url === '/advanced/run') return advancedRunHandler(req, res);\n"
             "  if (req.method === 'GET' && /^\\/(call-detail|recording|eval-run-detail)\\?/.test(req.url)) return callViewerHandler(req, res);\n"
             "  if (req.method === 'GET' && (req.url === '/logs' || req.url.startsWith('/logs?'))) return logsHandler(req, res);")
+    # Drop webhooks from simulation calls before they reach the live board.
+    srv.rep("  if (process.env.DEBUG_BODIES) console.log(body.slice(0, 4000));\n",
+            "  if (process.env.DEBUG_BODIES) console.log(body.slice(0, 4000));\n"
+            "  if (isTestCall(message?.call)) {  // simulation / test call: never shown on the board\n"
+            "    res.writeHead(200, { 'content-type': 'application/json' });\n"
+            "    res.end('{}');\n"
+            "    return;\n"
+            "  }\n")
     srv.sub(r"        turns: \(message\.messages \?\? \[\]\)\n.*?\.map\(\(m\) => \(\{ role: m\.role === 'bot'.*?\}\)\),\n",
             "        turns: historyTurns(message.messages),\n")
     srv.sub(r"        turns: messages\n.*?\.map\(\(m\) => \(\{ role: m\.role === 'bot'.*?\}\)\),\n",
@@ -661,7 +669,7 @@ def main():
                     'class="mid-stack"', 'TURN-BY-TURN', 'Stop speaking plan', 'Start speaking plan', '.cfg-small {', 'function displayText', 'const DEMO_DOMAINS = [', 'text = displayText(text);', "displayText(t.text)", 'function turnMarkerAppend', '.turn-marker {', 'let lastSpeaker = null;', "if (!turns.some((t) => t.role !== 'tool')) return;", 'function toolCardInline', 'function liveTick', 'class="tabs"', 'id="advanced"', 'function tabShow', 'data-tab="logs"', 'id="logsList"', 'function logsLoad', '.logs-row {', 'function advRenderSO', 'function advExpandable', 'async function openCallViewer', 'async function openEvalViewer', '.cv-lane {', 'advAutoOpen.add(key)', 'async function advRun', '.adv-run-btn {', '.adv-detail {', '.adv-grid {', "['Cost per hour'", 'Live call data', 'id="live"', '.live-row {', 'tool-card tool-inline flash', 'const afterTool', 'liveEndedReason = d.endedReason', 'let agentLabel', 'fold consecutive same-speaker', 'Config setup', '.cfg-row {', '<span class="n">04</span>', f'<title>{a.title}</title>']
                    + ([] if a.phone else ['id="talk-btn"', 'webCallStart', '.talk-btn {']),
         srv.path: ['async function lastCallHandler', "req.url === '/last-call'",
-                   'async function agentPromptHandler', "req.url === '/agent-prompt'", 'async function voiceLookup', 'stopSpeaking: {', 'startSpeaking: (() =>', 'function historyTurns', 'turns: historyTurns(message.messages)', 'turns: historyTurns(messages)', 'async function callStatsHandler', 'async function advancedHandler', 'async function advancedRunHandler', 'async function callViewerHandler', 'call-detail|recording|eval-run-detail', "req.url === '/advanced/run'", "provider: 'vapi.websocket'", 'async function logsHandler', "req.url.startsWith('/logs?')", 'const structuredOutputs = {', "req.url === '/advanced'", "startsWith('/call-stats?')"],
+                   'async function agentPromptHandler', "req.url === '/agent-prompt'", 'async function voiceLookup', 'stopSpeaking: {', 'startSpeaking: (() =>', 'function historyTurns', 'turns: historyTurns(message.messages)', 'turns: historyTurns(messages)', 'async function callStatsHandler', 'function isTestCall', 'if (isTestCall(message?.call))', '!isTestCall(c)', '.filter((c) => !isTestCall(c)).slice(0, 25)', 'async function advancedHandler', 'async function advancedRunHandler', 'async function callViewerHandler', 'call-detail|recording|eval-run-detail', "req.url === '/advanced/run'", "provider: 'vapi.websocket'", 'async function logsHandler', "req.url.startsWith('/logs?')", 'const structuredOutputs = {', "req.url === '/advanced'", "startsWith('/call-stats?')"],
     }
     if a.logo:
         checks[page.path] += ['class="customer-logo"', '.customer-logo {']
