@@ -252,6 +252,11 @@ Order that works (vapi-demo step 8 is slightly different here):
 
     railway domain update <domain-id> --domain <new-name>.up.railway.app
 
+**Verify a deploy against what changed.** Waiting for the served page to
+byte-match `public/index.html` only proves a PAGE change landed — after a
+server-only change the old container already matches, so probe a route whose
+response changed (poll until the new behaviour shows) before declaring it live.
+
 A rename REPLACES the old host (it 404s afterwards), so in the same step:
 re-set `PUBLIC_ORIGIN` to the new origin (redeploys; decode a `/webcall-token`
 JWT and check `allowedOrigins`), and PATCH the assistant's `server.url` to
