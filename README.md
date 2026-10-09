@@ -1,8 +1,9 @@
 # Vapi-Demo-Skillpack-Peter
 
-Companion plugin for `/vapi-demo:vapi-demo`. It carries Peter's demo-building
-learnings (the base skill can't be edited) and a script that applies every
-default dashboard edit in one verified pass.
+Self-contained Vapi demo builder: bundles the base `/vapi-demo` skill
+(`skills/vapi-demo-skillpack-peter/base/` — BASE.md, templates, examples) plus
+Peter's demo-building learnings and a script that applies every default
+dashboard edit in one verified pass.
 
 ## Install
 
@@ -13,7 +14,9 @@ claude plugin install vapi-demo-skillpack-peter@vapi-demo-skillpack-peter-market
 
 ## What's inside
 
-- `skills/vapi-demo-skillpack-peter/SKILL.md` — the rules: defaults, agent
+- `skills/vapi-demo-skillpack-peter/base/` — bundled base vapi-demo skill
+  (reference doc + server skeleton, example dashboard, panel templates).
+- `skills/vapi-demo-skillpack-peter/SKILL.md` — the rules (override base): defaults, agent
   creation, Railway deploy + domain naming, dashboard layout, pronunciation.
 - `scripts/apply-defaults.py` — turns a fresh vapi-demo scaffold into the
   standard dashboard (logo, title, config/prompt panels, turn-by-turn

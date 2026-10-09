@@ -1,13 +1,17 @@
 ---
 name: vapi-demo-skillpack-peter
-description: Peter's add-on learnings for /vapi-demo:vapi-demo. Use ALONGSIDE vapi-demo whenever Peter builds a Vapi demo — "make a demo for this assistant", "make an agent that does this", "add it to the railway page", "demo dashboard", "name the domain …". Covers creating the assistant first when asked (vapi-demo refuses to), Peter's org/Railway/folder defaults, custom Railway domain naming, web-call as the default, showing the last REAL call instead of try-it.sh dummy data, and a script that applies all default dashboard edits in one verified pass. Where this conflicts with vapi-demo, this wins.
+description: Peter's complete Vapi demo builder — the base /vapi-demo skill is bundled inside (base/BASE.md + templates), plus Peter's learnings on top. Use whenever Peter builds a Vapi demo — "make a demo for this assistant", "make an agent that does this", "add it to the railway page", "demo dashboard", "name the domain …". Covers creating the assistant first when asked (vapi-demo refuses to), Peter's org/Railway/folder defaults, custom Railway domain naming, web-call as the default, showing the last REAL call instead of try-it.sh dummy data, and a script that applies all default dashboard edits in one verified pass. Where this conflicts with the bundled base, this wins.
 ---
 
 # Vapi Demo Skillpack (Peter)
 
-A companion to `/vapi-demo:vapi-demo`. Load that skill too and follow its
-phases; this file only adds what was learned building demos for Peter. **Where
-the two disagree, this file wins** — these are Peter's explicit corrections.
+Self-contained: the base `/vapi-demo` skill is **bundled in this plugin** at
+`${CLAUDE_PLUGIN_ROOT}/skills/vapi-demo-skillpack-peter/base/` — read
+`base/BASE.md` first and follow its phases (cold start, wiring, deploy,
+demo craft), using the templates in `base/templates/` and `base/examples/`.
+The separate vapi-demo plugin is no longer required. This file adds what was
+learned building demos for Peter. **Where this file and BASE.md disagree,
+this file wins** — these are Peter's explicit corrections.
 
 ## 0. Defaults (don't ask, just use)
 
@@ -184,7 +188,8 @@ build it before the dashboard:
 
 ## 2. Scaffold + default edits in ONE verified pass
 
-After vapi-demo Default path step 3 (copy skeleton + example into the project),
+After base Default path step 3 — copy `base/templates/server-skeleton.mjs` → `server.mjs` and
+`base/examples/demo-dashboard.html` → `public/index.html` (and `base/examples/try-it.sh`) —
 run:
 
     python3 "${CLAUDE_PLUGIN_ROOT}/skills/vapi-demo-skillpack-peter/scripts/apply-defaults.py" \

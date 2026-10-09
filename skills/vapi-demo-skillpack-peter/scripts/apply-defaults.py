@@ -44,6 +44,11 @@ import sys
 
 
 def find_skill_dir():
+    # Prefer the base skill bundled in this plugin (../base), so the skillpack
+    # works on its own; fall back to an installed vapi-demo plugin.
+    bundled = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'base')
+    if os.path.isfile(os.path.join(bundled, 'templates', 'report-panel.html')):
+        return bundled
     cands = sorted(glob.glob(os.path.expanduser(
         '~/.claude/plugins/cache/vapi-demo-marketplace/vapi-demo/*/skills/vapi-demo')))
     cands.append(os.path.expanduser('~/Desktop/Claude Plugins/Vapi-Demo-Builder/skills/vapi-demo'))
