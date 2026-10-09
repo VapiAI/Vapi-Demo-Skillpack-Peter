@@ -175,6 +175,9 @@ this file wins** — these are Peter's explicit corrections.
   issues"), not the caller's words. Jacuzzi result: lookup in the call at
   9.4 s while the caller spoke until 15.5 s; no tool round-trip; model
   latency 1.26 s → 0.43 s; scenario passed.
+  Model names arrive mangled ("J-thirty 3" for J-335): glue the digits after
+  the model letter and map by SERIES digit (J-3xx → J-300 manual), not the
+  exact model number.
 - **Endpointing: default to Deepgram `nova-3` with NO smart endpointing**
   (Peter's call). Flux turn detection (`flux-general-en`, eotThreshold 0.75)
   stopped mid-sentence cut-offs but added 0.4–0.6 s to EVERY reply (reply gap
