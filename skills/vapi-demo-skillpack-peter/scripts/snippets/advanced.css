@@ -31,3 +31,21 @@ main[hidden], .advanced[hidden] { display: none !important; }
 .adv-badge.pass { border-color: var(--mint); color: var(--mint); }
 .adv-badge.fail { border-color: #e5484d; color: #e5484d; }
 .adv-so-val { font-size: 13px; font-weight: 600; word-break: break-word; }
+.adv-click .adv-item-top { cursor: pointer; user-select: none; }
+.adv-click:hover { border-color: var(--mint); }
+.adv-caret { color: var(--mint); width: 12px; font-size: 12px; }
+.adv-detail { display: none; flex-direction: column; gap: 6px; padding: 6px 0 2px 20px; }
+.adv-click.open .adv-detail { display: flex; }
+.adv-quote { font-size: 13px; line-height: 1.45; padding: 8px 12px; border-left: 2px solid var(--mint); background: var(--panel-bg); border-radius: 6px; }
+.adv-run-btn {
+  margin-left: auto; white-space: nowrap; font-family: "Foundry Gridnik", "Tomorrow", sans-serif;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--mint); color: var(--mint); background: var(--bg); cursor: pointer;
+}
+.adv-run-btn:hover { background: var(--mint); color: #111013; }
+.adv-run-btn.busy { border-color: var(--line); color: var(--text-muted); cursor: progress; animation: phpulse 1.4s ease-in-out infinite; opacity: .7; }
+.adv-run-btn.pass { border-color: var(--mint); color: var(--mint); }
+.adv-run-btn.fail { border-color: #e5484d; color: #e5484d; }
+.adv-suite-head { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.adv-suite-head .adv-k { margin-top: 0; }
+.adv-caret { cursor: pointer; padding: 2px 4px; }

@@ -110,6 +110,25 @@ this file wins** — these are Peter's explicit corrections.
   `GET /logs?id=<callId>` → turn-by-turn transcript with inline tool calls
   (same `historyTurns()` + `displayText()` as the live board). Refreshes
   every 30s while open.
+- **Advanced tab rows RUN on click** (Peter: "when I click them, run the
+  simulation or evaluation"). Row title → `POST /advanced/run {kind:
+  simulation|suite|eval, id}`; "▶ Run all" runs the whole suite; the ▸ caret
+  expands details (AI-caller instructions + pass checks / scripted turns +
+  judge criterion). Simulations run as **VOICE** by default
+  (`transport: {provider: 'vapi.websocket'}`, never webchat); evals are
+  chat-only in Vapi (`chat.mockConversation`). Server only accepts ids in this
+  agent's suite / org evals, 60s cooldown per item, 20 runs/hour (the page is
+  public). Status pill: Starting… → queued/running… → PASS·view / FAIL·view,
+  polling every 5s while anything is active.
+- **Call viewer (Vapi-dashboard style)** opens automatically when a run
+  started from the page finishes, and from any PASS/FAIL pill or "▶ View":
+  header (date + TZ, type, call id copy, agent id, ended reason, duration,
+  cost), lanes Assistant % / User % / Silence % / Tool calls from message
+  `secondsFromStart` + `duration`, playhead synced to audio, 1x/1.5x/2x,
+  click-to-seek, ⬇ Audio, clickable transcript. Audio via `GET /recording?id=`
+  → 302 to Vapi `/call/{id}/mono-recording` signed URL (HIPAA bucket URLs are
+  not public). Evals open the same frame with the scripted conversation +
+  judge verdict (`GET /eval-run-detail?id=`).
 - **Set up a simulation suite + evals for every demo agent**: write
   `<project>/configs/tests-spec.json` (4 scenarios, each paired with a
   built-in tester personality and 2–3 boolean pass checks; 3 chat evals with
