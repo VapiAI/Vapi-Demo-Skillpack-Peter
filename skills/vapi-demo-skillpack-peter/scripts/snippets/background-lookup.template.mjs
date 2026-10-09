@@ -7,7 +7,7 @@
 //       if (message?.type === 'transcript') prefetchFromTranscript(message, emitEvent).catch(() => {});
 //   - Vapi: function tool CONFIG.toolName (args query + model, both required, async: true,
 //     server.url = <demo>/tools — when PATCHing a tool send the FULL definition, a partial PATCH drops server),
-//     assistant monitorPlan.controlEnabled = true, transcriber Deepgram nova-3 (no smart endpointing: fastest replies),
+//     assistant monitorPlan.controlEnabled = true, transcriber with turn detection (Deepgram flux-general-en),
 //     prompt: "FIRST check for a [Background lookup result] (often pre-fetched while the caller speaks) and answer
 //     from it; call the tool only when none covers the model + issue".
 //   - .railwayignore: anchor root-only folders (/kb/), never a bare kb/ (it also matches data/kb/).
@@ -275,22 +275,34 @@ export function spokenNumbers(text) {
 const SYMPTOM = CONFIG.symptomPattern;
 const prefetchState = new Map(); // callId -> { keys:Set, url }
 export async function prefetchFromTranscript(message, emitEvent) {
-  if (message?.type !== 'transcript' || message.role !== 'user' || !message.call?.id) return;
+  if (message?.type !== 'transcript' || !message.call?.id) return;
   const callId = message.call.id;
-  const raw = String(message.transcript ?? '');
+  const st = prefetchState.get(callId) ?? { keys: new Set(), turn: '', model: null };
+  prefetchState.set(callId, st);
+  if (prefetchState.size > 200) prefetchState.delete(prefetchState.keys().next().value);
+  // Transcribers differ: Flux resends the whole turn so far, nova-3 sends each
+  // piece separately ("…a model X 300" / "that is showing low pressure" /
+  // "code 16."). Accumulate the caller's turn from its finals (+ the live
+  // partial), reset when the agent speaks, and remember the model all call.
+  if (message.role !== 'user') { if (message.transcriptType === 'final') st.turn = ''; return; }
+  const piece = String(message.transcript ?? '').trim();
+  const cumulative = st.turn && piece.toLowerCase().startsWith(st.turn.toLowerCase().slice(0, 40));
+  const raw = cumulative ? piece : (st.turn ? st.turn + ' ' + piece : piece);
+  if (message.transcriptType === 'final') st.turn = raw;
   const text = spokenNumbers(raw);
   const modelMatch = text.match(CONFIG.modelPattern);
+  if (modelMatch) {
+    const m = CONFIG.normalizeModel(modelMatch[0]);
+    if (manualFor(m)) st.model = m;
+  }
   const symptom = text.match(SYMPTOM);
-  if (!modelMatch || !symptom) return;
-  const model = CONFIG.normalizeModel(modelMatch[0]);
+  const model = st.model;
+  if (!model || !symptom) return;
   const manual = manualFor(model);
   if (!manual) return;
   // A code at the very end of a PARTIAL may still be growing ("code six" -> "sixteen"): wait.
   const codeM = text.match(/code (\d{1,3})(\W*)$/i) && message.transcriptType !== 'final' ? null : text.match(/code (\d{1,3})/i);
   const code = codeM?.[1];
-  const st = prefetchState.get(callId) ?? { keys: new Set() };
-  prefetchState.set(callId, st);
-  if (prefetchState.size > 200) prefetchState.delete(prefetchState.keys().next().value);
   const key = manual + '|' + (code ? 'code' + code : symptom[0].toLowerCase().replace(/s$/, ''));
   if (st.keys.has(key)) return;
   st.keys.add(key);

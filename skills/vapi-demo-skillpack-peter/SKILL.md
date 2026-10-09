@@ -175,6 +175,16 @@ this file wins** — these are Peter's explicit corrections.
   issues"), not the caller's words. Jacuzzi result: lookup in the call at
   9.4 s while the caller spoke until 15.5 s; no tool round-trip; model
   latency 1.26 s → 0.43 s; scenario passed.
+  **nova-3 sends the caller's speech in separate pieces** ("…j 300
+  collection" / "spa showing heat low flow" / "code 16."), unlike Flux which
+  resends the whole turn — so build the caller's turn from its finals (+ the
+  live partial), reset when the agent speaks, and remember the model for the
+  whole call; matching one webhook at a time silently never fires. Pre-fetch
+  runs for simulation calls too but must NOT publish to the live board (pass
+  no emitter when `isTestCall`). Simulation calls are identified by
+  `type: "vapi.websocketCall"` + `metadata.isSimulation: "true"`
+  (`metadata.role: "target"`, simulationRunId…); they also carry an
+  `assistantOverrides` snapshot (model/voice/firstMessage) of the agent.
   Model names arrive mangled ("J-thirty 3" for J-335): glue the digits after
   the model letter and map by SERIES digit (J-3xx → J-300 manual), not the
   exact model number.
