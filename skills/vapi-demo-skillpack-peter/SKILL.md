@@ -15,11 +15,14 @@ this file wins** — these are Peter's explicit corrections.
 
 ## 0. Defaults (don't ask, just use)
 
-- **Vapi org + key:** read Peter's auto-memory (`reference_default-vapi-org.md`)
-  for the default org id and private key. Never ask "assistant or squad"; never
-  re-ask for a key memory already holds. Confirm `orgId` on the first API
-  response matches. Never hardcode the key in this plugin, in project files, or
-  in git — only in Railway variables and inline per command.
+- **Vapi org + key: ALWAYS ask Peter at the start of every build** for the
+  org id AND that org's private API key, in one question, before any Vapi call
+  (demos go into different orgs per customer). Do not fall back to a key in
+  memory or a previous build. Verify with `GET /assistant?limit=1` (or any
+  list) that the key works and that `orgId` on the response matches the id he
+  gave; if it doesn't match, say so and stop. Never ask "assistant or squad".
+  Never hardcode the key in this plugin, in project files, or in git — only in
+  Railway variables and inline per command.
 - **Project folder:** `~/Desktop/Vapi Demos/<demo-name>/` (never `Claude Apps`).
 - **Railway workspace:** `"Vapi Demos"` (personal trial is expired).
 - **How calls reach the agent:** the web-call button, unless Peter gives a
@@ -110,6 +113,65 @@ this file wins** — these are Peter's explicit corrections.
   `GET /logs?id=<callId>` → turn-by-turn transcript with inline tool calls
   (same `historyTurns()` + `displayText()` as the live board). Refreshes
   every 30s while open.
+- **4th in-line tab "Tools & Knowledge Base"** (tabs: Live | Advanced | Logs |
+  Tools & Knowledge Base). Peter's ask: show the tools ACTIVE on the agent,
+  not just tools that happen to be used on a live call. `GET /tools-kb` reads
+  the assistant live (saved `model.toolIds` + inline `model.tools`, built-ins
+  like endCall included), cached 30s. **Tools card:** counts (active /
+  knowledge bases / built-in), then one row per tool with an "● Active" dot,
+  type chip (Knowledge base / Function / Built-in…), description, parameter
+  chips (required ones outlined), KB it searches, and usage ("Used 3× in the
+  last 25 calls · last …" or "Ready on every call · not used…", counted from
+  real calls only); click a row for full parameter docs, server, destinations.
+  **Knowledge base card:** each query tool's KB with document count, indexed
+  size, ready count, and one row per file (`GET /file/:id`) with size + READY.
+  Snippets `tools-kb.{server,page}.js` + `tools-kb.css`, applied by
+  `apply-defaults.py`. Refreshes every 30s while open; a failed load keeps the
+  last good render and retries.
+- **Tool calls in the live transcript = event-log entries** (Peter's ask, styled
+  after Vapi's internal call log): "+mm:ss.mmm" call time (from the message's
+  `secondsFromStart`), "Tool call · <name>", TOOL chip, args as key: value
+  lines, then a second timestamped "Tool result" line with a RESULT chip and
+  latency from Vapi's own timestamps; long results clamp (click to expand).
+  `scripts/tool_log_patch.py` (run by apply-defaults, or alone on an existing
+  demo) applies `snippets/tool-log.*`.
+- **Knowledge lookups: don't make the caller wait in silence.** Vapi's `query`
+  (Google KB) tool took 5.7 s + 4.7 s of LLM time before speech on the Jacuzzi
+  demo (~10 s dead air). Peter's pattern instead: a FUNCTION tool on the demo
+  server that answers instantly `{status:"lookup_started"}`; the agent says
+  "let me pull up the manual" and asks ONE clarifying question; the server
+  searches and pushes the result into the call with the call's
+  `monitor.controlUrl` → `POST {type:"add-message", message:{role:"system",
+  content:"[Background lookup result] …"}, triggerResponseEnabled:false}`
+  (requires assistant `monitorPlan.controlEnabled: true`). Emit
+  `tool.background` to the dashboard (rendered as "Background result · ADDED
+  TO CALL"); history rebuilds it from system messages with that prefix.
+  **Search only the caller's specific manual** (make `model` a required arg,
+  map model → manual, plus the small FAQ) — Peter's explicit ask for speed.
+  Section-level BM25 (split on headings, weight heading matches, exact
+  "(Code NN)" match, down-weight table-of-contents chunks) answered in <1 ms.
+  Export `localKnowledgeBase()` from the search module so the Tools &
+  Knowledge Base tab lists the server-hosted documents. Start from
+  `scripts/snippets/background-lookup.template.mjs` (fill its CONFIG: tool
+  name, model→manual regexes, FAQ pattern; docs as .txt in `data/kb/`; its
+  header lists the server + Vapi wiring). Prompt section that worked: "call
+  it with query + model; it returns lookup_started; say you're pulling up the
+  manual and ask ONE clarifying question (error code? when did it start?
+  filter cleaned? pump running? / dealers: what have you checked?); never
+  give steps before the [Background lookup result] arrives; answer only from
+  it; don't re-search the same question".
+- **`.railwayignore` patterns match at any depth.** `kb/` also excluded
+  `data/kb/`, the server crashed on boot (ENOENT) and the site went down.
+  Anchor root-only folders with a slash (`/kb/`), and make data loaders
+  tolerate a missing folder instead of throwing at import.
+- **Never use the class name `adv-click` (or other ad-like class names).**
+  Ad-blocker filter lists hide `.adv-click` with `display:none` — on Peter's
+  Chrome every clickable row (Advanced rows, tool rows) rendered as zero
+  height while the page looked fine in a clean browser. The clickable-row
+  class is `row-click`; `apply-defaults.py` fails if `adv-click` appears. When
+  a section shows on one machine but not another, test the class in the real
+  browser: `getComputedStyle(el).display` is `none` with no matching page
+  rule → an extension stylesheet.
 - **Advanced tab rows RUN on click** (Peter: "when I click them, run the
   simulation or evaluation"). Row title → `POST /advanced/run {kind:
   simulation|suite|eval, id}`; "▶ Run all" runs the whole suite; the ▸ caret

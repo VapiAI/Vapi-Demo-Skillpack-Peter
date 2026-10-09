@@ -1,0 +1,21 @@
+/* Tool calls in the live transcript: event-log entries. */
+#transcript .tool-log { margin: 4px 0; padding: 10px 14px; border: 1px solid #b9d7f5; background: #f2f7fd; border-radius: 12px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+#transcript .tool-log.done { border-color: #cfe3f7; }
+.tool-log .tl-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: start; }
+.tool-log .tl-when { display: flex; flex-direction: column; gap: 2px; }
+.tool-log .tl-t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #64748b; font-variant-numeric: tabular-nums; }
+.tool-log .tl-title { font-weight: 600; color: var(--text); overflow-wrap: break-word; word-break: normal; line-height: 1.35; padding-top: 1px; }
+.tool-log .tl-chip { font-family: "Foundry Gridnik", "Tomorrow", sans-serif; font-size: 10px; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.tool-log .tl-chip.tool { color: #3b4a9a; background: #e2e8fb; border-color: #b8c4f0; }
+.tool-log .tl-chip.result { color: #0f6b54; background: #ddf6ee; border-color: #a7e3cf; }
+.tool-log .ms { font-family: "Foundry Gridnik", "Tomorrow", sans-serif; font-size: 10px; letter-spacing: 0.06em; color: #64748b; }
+.tool-log:not(.done) .tl-row.call .ms { color: var(--sunset); animation: phpulse 1.4s ease-in-out infinite; }
+.tool-log .tl-args { margin-left: 102px; display: flex; flex-direction: column; gap: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.tool-log .tl-args .k { color: #64748b; margin-right: 8px; }
+.tool-log .tl-args .k::after { content: ":"; }
+.tool-log .tl-args .v { color: var(--text); overflow-wrap: anywhere; }
+.tool-log .tl-result { margin: 0 0 0 102px; padding: 8px 10px; background: #fff; border: 1px solid #dbe7f3; border-radius: 8px; font-size: 12.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tool-log .tl-result.clamp { max-height: 4.4em; overflow: hidden; cursor: pointer; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+@media (max-width: 700px) { .tool-log .tl-row { grid-template-columns: 78px 1fr auto; } .tool-log .tl-args, .tool-log .tl-result { margin-left: 0; } }
+.tool-log.background { border-style: dashed; }
+.tool-log .tl-warn { margin-left: 102px; font-size: 12px; color: #b4532a; }

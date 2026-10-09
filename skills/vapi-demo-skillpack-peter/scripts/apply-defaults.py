@@ -626,28 +626,32 @@ def main():
              '  <button class="tab-btn on" data-tab="live" role="tab">Live</button>\n'
              '  <button class="tab-btn" data-tab="advanced" role="tab">Advanced</button>\n'
              '  <button class="tab-btn" data-tab="logs" role="tab">Logs</button>\n'
+             '  <button class="tab-btn" data-tab="toolskb" role="tab">Tools &amp; Knowledge Base</button>\n'
              '</nav>\n')
     page.rep('</main>\n',
              '</main>\n\n<section class="advanced" id="advanced" hidden>\n'
              '  <div class="adv-grid" id="advGrid"></div>\n</section>\n\n'
-             '<section class="logs" id="logs" hidden>\n  <div class="logs-list" id="logsList"></div>\n</section>\n')
+             '<section class="logs" id="logs" hidden>\n  <div class="logs-list" id="logsList"></div>\n</section>\n\n'
+             '<section class="advanced" id="toolskb" hidden>\n  <div class="adv-grid" id="tkbGrid"></div>\n</section>\n')
     page.rep('/* Reset, so the board can be cleared before a screen share. */',
              open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snippets', 'advanced.css')).read()
              + open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snippets', 'logs.css')).read()
              + open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snippets', 'call-viewer.css')).read()
+             + open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'snippets', 'tools-kb.css')).read()
              + '\n/* Reset, so the board can be cleared before a screen share. */')
-    page.rep(anchor, snip('call-viewer.page.js') + snip('logs.page.js') + snip('advanced.page.js') + anchor)
+    page.rep(anchor, snip('call-viewer.page.js') + snip('logs.page.js') + snip('tools-kb.page.js') + snip('advanced.page.js') + anchor)
     page.save()
 
     srv = Doc(srv.path)
-    srv.rep('\n// ---- Static + routing', snip('real-calls.server.js') + snip('history-turns.server.js') + snip('call-stats.server.js') + snip('advanced.server.js') + snip('logs.server.js') + snip('call-viewer.server.js') + '\n// ---- Static + routing')
+    srv.rep('\n// ---- Static + routing', snip('real-calls.server.js') + snip('history-turns.server.js') + snip('call-stats.server.js') + snip('advanced.server.js') + snip('logs.server.js') + snip('call-viewer.server.js') + snip('tools-kb.server.js') + '\n// ---- Static + routing')
     srv.rep("  if (req.method === 'GET' && req.url === '/last-call') return lastCallHandler(res);",
             "  if (req.method === 'GET' && req.url === '/last-call') return lastCallHandler(res);\n"
             "  if (req.method === 'GET' && req.url.startsWith('/call-stats?')) return callStatsHandler(req, res);\n"
             "  if (req.method === 'GET' && req.url === '/advanced') return advancedHandler(res);\n"
             "  if (req.method === 'POST' && req.url === '/advanced/run') return advancedRunHandler(req, res);\n"
             "  if (req.method === 'GET' && /^\\/(call-detail|recording|eval-run-detail)\\?/.test(req.url)) return callViewerHandler(req, res);\n"
-            "  if (req.method === 'GET' && (req.url === '/logs' || req.url.startsWith('/logs?'))) return logsHandler(req, res);")
+            "  if (req.method === 'GET' && (req.url === '/logs' || req.url.startsWith('/logs?'))) return logsHandler(req, res);\n"
+            "  if (req.method === 'GET' && req.url === '/tools-kb') return toolsKbHandler(res);")
     # Drop webhooks from simulation calls before they reach the live board.
     srv.rep("  if (process.env.DEBUG_BODIES) console.log(body.slice(0, 4000));\n",
             "  if (process.env.DEBUG_BODIES) console.log(body.slice(0, 4000));\n"
@@ -666,10 +670,10 @@ def main():
     checks = {
         page.path: ['id="prompt"', 'prompt: {', 'agentPromptShow();', '.prompt-text {',
                     "placeholderShow('prompt');", 'lastCallShow();', 'id="config"', 'function configRender',
-                    'class="mid-stack"', 'TURN-BY-TURN', 'Stop speaking plan', 'Start speaking plan', '.cfg-small {', 'function displayText', 'const DEMO_DOMAINS = [', 'text = displayText(text);', "displayText(t.text)", 'function turnMarkerAppend', '.turn-marker {', 'let lastSpeaker = null;', "if (!turns.some((t) => t.role !== 'tool')) return;", 'function toolCardInline', 'function liveTick', 'class="tabs"', 'id="advanced"', 'function tabShow', 'data-tab="logs"', 'id="logsList"', 'function logsLoad', '.logs-row {', 'function advRenderSO', 'function advExpandable', 'async function openCallViewer', 'async function openEvalViewer', '.cv-lane {', 'advAutoOpen.add(key)', 'async function advRun', '.adv-run-btn {', '.adv-detail {', '.adv-grid {', "['Cost per hour'", 'Live call data', 'id="live"', '.live-row {', 'tool-card tool-inline flash', 'const afterTool', 'liveEndedReason = d.endedReason', 'let agentLabel', 'fold consecutive same-speaker', 'Config setup', '.cfg-row {', '<span class="n">04</span>', f'<title>{a.title}</title>']
+                    'class="mid-stack"', 'TURN-BY-TURN', 'Stop speaking plan', 'Start speaking plan', '.cfg-small {', 'function displayText', 'const DEMO_DOMAINS = [', 'text = displayText(text);', "displayText(t.text)", 'function turnMarkerAppend', '.turn-marker {', 'let lastSpeaker = null;', "if (!turns.some((t) => t.role !== 'tool')) return;", 'function toolCardInline', 'function liveTick', 'class="tabs"', 'id="advanced"', 'function tabShow', 'data-tab="logs"', 'id="logsList"', 'data-tab="toolskb"', 'id="tkbGrid"', 'function tkbToolItem', 'tkbTimer = setInterval(tkbLoad', '.tkb-active', 'row-click', 'function logsLoad', '.logs-row {', 'function advRenderSO', 'function advExpandable', 'async function openCallViewer', 'async function openEvalViewer', '.cv-lane {', 'advAutoOpen.add(key)', 'async function advRun', '.adv-run-btn {', '.adv-detail {', '.adv-grid {', "['Cost per hour'", 'Live call data', 'id="live"', '.live-row {', 'tool-card tool-inline flash', 'const afterTool', 'liveEndedReason = d.endedReason', 'let agentLabel', 'fold consecutive same-speaker', 'Config setup', '.cfg-row {', '<span class="n">04</span>', f'<title>{a.title}</title>']
                    + ([] if a.phone else ['id="talk-btn"', 'webCallStart', '.talk-btn {']),
         srv.path: ['async function lastCallHandler', "req.url === '/last-call'",
-                   'async function agentPromptHandler', "req.url === '/agent-prompt'", 'async function voiceLookup', 'stopSpeaking: {', 'startSpeaking: (() =>', 'function historyTurns', 'turns: historyTurns(message.messages)', 'turns: historyTurns(messages)', 'async function callStatsHandler', 'function isTestCall', 'if (isTestCall(message?.call))', '!isTestCall(c)', '.filter((c) => !isTestCall(c)).slice(0, 25)', 'async function advancedHandler', 'async function advancedRunHandler', 'async function callViewerHandler', 'call-detail|recording|eval-run-detail', "req.url === '/advanced/run'", "provider: 'vapi.websocket'", 'async function logsHandler', "req.url.startsWith('/logs?')", 'const structuredOutputs = {', "req.url === '/advanced'", "startsWith('/call-stats?')"],
+                   'async function agentPromptHandler', "req.url === '/agent-prompt'", 'async function voiceLookup', 'stopSpeaking: {', 'startSpeaking: (() =>', 'function historyTurns', 'turns: historyTurns(message.messages)', 'turns: historyTurns(messages)', 'async function callStatsHandler', 'function isTestCall', 'if (isTestCall(message?.call))', '!isTestCall(c)', '.filter((c) => !isTestCall(c)).slice(0, 25)', 'async function advancedHandler', 'async function advancedRunHandler', 'async function callViewerHandler', 'call-detail|recording|eval-run-detail', "req.url === '/advanced/run'", "provider: 'vapi.websocket'", 'async function logsHandler', 'async function toolsKbHandler', "req.url === '/tools-kb'", "req.url.startsWith('/logs?')", 'const structuredOutputs = {', "req.url === '/advanced'", "startsWith('/call-stats?')"],
     }
     if a.logo:
         checks[page.path] += ['class="customer-logo"', '.customer-logo {']
@@ -677,10 +681,14 @@ def main():
     for path, marks in checks.items():
         text = open(path).read()
         bad += [f'{os.path.basename(path)}: {m}' for m in marks if m not in text]
-    leftovers = [w for w in ('Sarah', 'renderRide', 'id="ride"', "case 'ride'", "'ride'", 'outcomeRender', 'id="tools"', "$('tools')")
+    leftovers = [w for w in ('Sarah', 'renderRide', 'id="ride"', "case 'ride'", "'ride'", 'outcomeRender', 'id="tools"', "$('tools')", 'adv-click')
                  if w in open(page.path).read()]
     if bad or leftovers:
         sys.exit(f'FAILED. missing: {bad} leftovers: {leftovers}')
+    # Tool calls in the live transcript as event-log entries (verified inside).
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import tool_log_patch
+    tool_log_patch.apply(a.project_dir)
     print('ok: all default edits applied and verified')
 
 

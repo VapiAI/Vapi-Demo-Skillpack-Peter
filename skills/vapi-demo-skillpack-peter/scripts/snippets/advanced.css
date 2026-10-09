@@ -31,11 +31,11 @@ main[hidden], .advanced[hidden] { display: none !important; }
 .adv-badge.pass { border-color: var(--mint); color: var(--mint); }
 .adv-badge.fail { border-color: #e5484d; color: #e5484d; }
 .adv-so-val { font-size: 13px; font-weight: 600; word-break: break-word; }
-.adv-click .adv-item-top { cursor: pointer; user-select: none; }
-.adv-click:hover { border-color: var(--mint); }
+.row-click .adv-item-top { cursor: pointer; user-select: none; }
+.row-click:hover { border-color: var(--mint); }
 .adv-caret { color: var(--mint); width: 12px; font-size: 12px; }
 .adv-detail { display: none; flex-direction: column; gap: 6px; padding: 6px 0 2px 20px; }
-.adv-click.open .adv-detail { display: flex; }
+.row-click.open .adv-detail { display: flex; }
 .adv-quote { font-size: 13px; line-height: 1.45; padding: 8px 12px; border-left: 2px solid var(--mint); background: var(--panel-bg); border-radius: 6px; }
 .adv-run-btn {
   margin-left: auto; white-space: nowrap; font-family: "Foundry Gridnik", "Tomorrow", sans-serif;

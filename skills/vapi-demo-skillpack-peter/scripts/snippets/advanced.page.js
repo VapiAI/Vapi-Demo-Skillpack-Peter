@@ -9,7 +9,7 @@ const advOpen = new Set(); // expanded rows survive the 30s refresh
 // `status` is the latest run state for this item: {label, cls}.
 const advPending = new Map(); // key -> local "starting…" / error text until the API catches up
 function advExpandable(key, title, fillDetail, run, status) {
-  const it = advEl('div', 'adv-item adv-click' + (advOpen.has(key) ? ' open' : ''));
+  const it = advEl('div', 'adv-item row-click' + (advOpen.has(key) ? ' open' : ''));
   const top = advEl('div', 'adv-item-top');
   const caret = advEl('span', 'adv-caret', advOpen.has(key) ? '▾' : '▸');
   caret.title = 'Show details';
@@ -313,11 +313,14 @@ function tabShow(name) {
   document.querySelector('main').hidden = name !== 'live';
   $('advanced').hidden = name !== 'advanced';
   if ($('logs')) $('logs').hidden = name !== 'logs';
+  if ($('toolskb')) $('toolskb').hidden = name !== 'toolskb';
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
   clearInterval(advTimer);
   if (typeof logsTimer !== 'undefined') clearInterval(logsTimer);
+  if (typeof tkbTimer !== 'undefined') clearInterval(tkbTimer);
   if (name === 'advanced') { advLoad(); advTimer = setInterval(advLoad, 30000); }
   if (name === 'logs') { logsLoad(); logsTimer = setInterval(logsLoad, 30000); }
+  if (name === 'toolskb' && typeof tkbLoad === 'function') { tkbLoad(); tkbTimer = setInterval(tkbLoad, 30000); }
 }
 document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => tabShow(b.dataset.tab)));
 

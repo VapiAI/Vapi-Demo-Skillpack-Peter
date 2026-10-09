@@ -1,0 +1,24 @@
+/* Tools & Knowledge Base tab. */
+.tkb-type { font-family: "Foundry Gridnik", "Tomorrow", sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--text-muted); white-space: nowrap; }
+.tkb-type.query { border-color: var(--mint); color: var(--mint); }
+.tkb-active { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-family: "Foundry Gridnik", "Tomorrow", sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mint); white-space: nowrap; }
+.tkb-active::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); }
+.tkb-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.tkb-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tkb-chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-bg); }
+.tkb-chip.req { border-color: var(--mint); }
+.tkb-use { font-size: 12px; color: var(--text-muted); }
+.tkb-use b { color: var(--text); font-weight: 600; }
+.tkb-param { display: grid; grid-template-columns: 150px 1fr; gap: 10px; font-size: 12.5px; line-height: 1.4; padding: 4px 0; border-top: 1px dashed var(--line); }
+.tkb-param .n { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+.tkb-param .n i { color: var(--mint); font-style: normal; }
+.tkb-param .d { color: var(--text-muted); }
+.tkb-meta { font-size: 12px; color: var(--text-muted); }
+.tkb-file { display: grid; grid-template-columns: 18px 1fr auto auto; gap: 10px; align-items: center; font-size: 13px; padding: 8px 2px; border-top: 1px dashed var(--line); }
+.tkb-file .ic { color: var(--mint); font-size: 12px; }
+.tkb-file .nm { font-weight: 600; word-break: break-word; }
+.tkb-file .sz { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.tkb-stats { display: flex; gap: 22px; flex-wrap: wrap; margin: 8px 0 2px; }
+.tkb-stat .v { font-size: 20px; font-weight: 600; }
+.tkb-stat .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.tkb-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
