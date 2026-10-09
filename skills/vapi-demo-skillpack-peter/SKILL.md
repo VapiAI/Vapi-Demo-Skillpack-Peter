@@ -23,6 +23,14 @@ this file wins** — these are Peter's explicit corrections.
   gave; if it doesn't match, say so and stop. Never ask "assistant or squad".
   Never hardcode the key in this plugin, in project files, or in git — only in
   Railway variables and inline per command.
+- **Agent changes: ask "just this agent, or the agent AND the skill?"**
+  Whenever Peter asks to change an agent's behavior or settings (prompt rules,
+  transcriber, voice, speaking plans, silence handling, tools…), ask once,
+  before applying, whether it should go on **just this agent** or on **this
+  agent and the skill** (so every future agent gets it: SKILL.md guidance,
+  templates, defaults). Apply it to the agent either way; only edit + push the
+  skill when he says both. Dashboard/page changes are not agent changes —
+  those keep going into the skill by default.
 - **Project folder:** `~/Desktop/Vapi Demos/<demo-name>/` (never `Claude Apps`).
 - **Railway workspace:** `"Vapi Demos"` (personal trial is expired).
 - **How calls reach the agent:** the web-call button, unless Peter gives a
