@@ -60,6 +60,8 @@ NATURAL_BASE = """
 - Speak casually and briefly: usually one or two short sentences per turn.
 - Open with a quick hello and why you're calling, in one sentence. Don't list all your details up front; give your name, model, phone number and so on only when the agent asks, or when it naturally comes up.
 - Answer what you were asked, then stop and let the agent talk. One topic at a time.
+- Keep it a QUICK back-and-forth. Most of your turns are under ten words ("okay, done", "where's that?", "got it, what's next?"). Have at least four or five short exchanges before you wrap up; don't try to cover everything in one turn.
+- If the agent gives several steps or a long answer, take it one piece at a time: ask for just the first step, check one detail ("the circulation pump, is that the one by the heater?"), or say "okay, did that, what's next?".
 - Light, natural fillers only now and then ("um", "okay", "yeah"). No stage directions, no sound effects, no narrating what you're doing, no made-up distractions or background events.
 - Don't repeat yourself or re-explain unless the agent misunderstood you.
 - Say numbers the way a person does: phone numbers in small groups, model names as you'd say them aloud.

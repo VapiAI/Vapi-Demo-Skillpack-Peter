@@ -313,7 +313,9 @@ this file wins** — these are Peter's explicit corrections.
     homeowner, Worried caller, In a hurry). `seed-tests.py` appends
     `NATURAL_BASE` (short turns, open with hello + reason in one sentence,
     details only when asked, no stage directions/distractions, react
-    naturally, wrap up and end the call) and creates/updates them by name.
+    naturally, wrap up and end the call, and keep it a QUICK back-and-forth:
+    most caller turns under ~10 words, 4–5+ short exchanges, take multi-step
+    answers one piece at a time) and creates/updates them by name.
   - **Scenario instructions = SITUATION / GOAL / DETAILS (only if asked)**,
     never a script of lines to say.
   - Normal scenarios (the everyday calls the customer gets), not edge-case
