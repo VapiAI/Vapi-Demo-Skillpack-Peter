@@ -160,6 +160,31 @@ this file wins** — these are Peter's explicit corrections.
   filter cleaned? pump running? / dealers: what have you checked?); never
   give steps before the [Background lookup result] arrives; answer only from
   it; don't re-search the same question".
+- **Start the lookup while the caller is still talking, not at the turn**
+  (Peter's ask). The LLM only runs at end of turn, so the demo server watches
+  the caller's live `transcript` webhooks (partials too, real AND simulation
+  calls — run it before the test-call drop) and, once the words so far name a
+  model AND a symptom/code, searches that manual and add-messages the result
+  into the call mid-sentence (`prefetchFromTranscript` in the template; spoken
+  numbers → digits; dedupe per manual+issue; ignore a code at the very end of
+  a still-growing partial — "code six" → "sixteen"; later results say they
+  SUPERSEDE earlier ones). Prompt: "FIRST check for a [Background lookup
+  result] and answer from it; call the tool only when none covers it". Codes:
+  look up the code's definition line in that manual, then search the
+  troubleshooting sections by its MEANING ("water flow is low" → "15.1 Flow
+  issues"), not the caller's words. Jacuzzi result: lookup in the call at
+  9.4 s while the caller spoke until 15.5 s; no tool round-trip; model
+  latency 1.26 s → 0.43 s; scenario passed.
+- **Latency fixes that worked:** Deepgram `flux-general-en` (turn detection;
+  `eotThreshold` 0.75, `eotTimeoutMs` 3000) stopped the agent jumping in on a
+  mid-sentence pause (it had fired the tool while the caller was still
+  talking); the lookup tool `async: true` (no 1.2 s wait on "lookup_started");
+  "one short sentence + ONE question, no recap" in the prompt.
+- **Vapi tool PATCH drops fields you don't send.** `PATCH /tool/:id
+  {"async":true}` wiped `server`, so the call went to the assistant webhook and
+  the lookup never ran (the agent then answered "per the manual" ungrounded).
+  Always PATCH the full definition (type-specific fields + `server`), then GET
+  and check `server.url`.
 - **`.railwayignore` patterns match at any depth.** `kb/` also excluded
   `data/kb/`, the server crashed on boot (ENOENT) and the site went down.
   Anchor root-only folders with a slash (`/kb/`), and make data loaders
