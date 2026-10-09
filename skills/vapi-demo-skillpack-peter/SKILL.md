@@ -405,6 +405,11 @@ build it before the dashboard:
    the next step or ask the one needed question; use the name only when needed
    (e.g. confirming it for a case), inside a sentence with a comma; no
    one-word sentences ("Next." / "No.").
+   **One step per turn** (Peter, agent + skill): every prompt that walks a
+   caller through steps says "ONE step per turn, about 25 words max, then
+   wait for the caller; split multi-part steps; never read a whole procedure
+   in one turn". A 56-word / 19 s answer ate a third of a 1-minute simulation
+   and killed the back-and-forth.
 7. Defaults that worked: OpenAI `gpt-4.1`, Deepgram `nova-3`, Cartesia
    `sonic-3.5` voice reused from an existing assistant in the org.
 8. Build the body with python `json.dumps` from a prompt file (no shell
