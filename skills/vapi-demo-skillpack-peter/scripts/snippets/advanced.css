@@ -46,6 +46,8 @@ main[hidden], .advanced[hidden] { display: none !important; }
 .adv-run-btn.busy { border-color: var(--line); color: var(--text-muted); cursor: progress; animation: phpulse 1.4s ease-in-out infinite; opacity: .7; }
 .adv-run-btn.pass { border-color: var(--mint); color: var(--mint); }
 .adv-run-btn.fail { border-color: #e5484d; color: #e5484d; }
+.adv-run-btn.stop { border-color: #e5484d; color: #e5484d; }
+.adv-run-btn.stop:hover { background: #e5484d; color: #fff; }
 .adv-suite-head { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .adv-suite-head .adv-k { margin-top: 0; }
 .adv-caret { cursor: pointer; padding: 2px 4px; }

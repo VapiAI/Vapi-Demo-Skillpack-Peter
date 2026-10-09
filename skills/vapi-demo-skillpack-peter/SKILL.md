@@ -218,8 +218,12 @@ this file wins** — these are Peter's explicit corrections.
   live call, so any background-lookup tool must answer synchronously when
   there is no `call.id` (the template does). Each card lists only its own runs. Server only accepts ids in this
   agent's suite / org evals, 60s cooldown per item, 20 runs/hour (the page is
-  public). Status pill: Starting… → queued/running… → PASS·view / FAIL·view,
-  polling every 5s while anything is active.
+  public). Row button is ONLY "▶ Run", or "■ Stop" while that simulation is
+  running (Peter: no PASS·view / status pills on the rows). Stop →
+  `POST /advanced/stop {runId, itemId}` → `PATCH /eval/simulation/run/{id}`
+  (or `/item/{itemId}`), only for runs targeting this agent. Evals show
+  "Running…" instead (Vapi has no eval-run cancel). PASS/FAIL and "View" live
+  ONLY under Recent runs. Polling every 5s while anything is active.
 - **Live board, last call and Logs show REAL calls only.** Simulation runs
   call the same assistant (its server.url), so their webhooks would land on
   the live board. `isTestCall()` flags `metadata.isSimulation:"true"` /

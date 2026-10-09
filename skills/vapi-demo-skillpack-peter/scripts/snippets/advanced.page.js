@@ -6,7 +6,9 @@ let advTimer = null;
 const advOpen = new Set(); // expanded rows survive the 30s refresh
 
 // A row: clicking it RUNS the simulation / eval; the caret expands details.
-// `status` is the latest run state for this item: {label, cls}.
+// The row button is only "▶ Run", or "■ Stop" while a run is in progress
+// (simulations; evals show "Running…" — Vapi has no eval cancel). Results and
+// "View" live only under Recent runs. `status` = latest run state for the item.
 const advPending = new Map(); // key -> local "starting…" / error text until the API catches up
 function advExpandable(key, title, fillDetail, run, status) {
   const it = advEl('div', 'adv-item row-click' + (advOpen.has(key) ? ' open' : ''));
@@ -16,13 +18,15 @@ function advExpandable(key, title, fillDetail, run, status) {
   top.appendChild(caret);
   top.appendChild(advEl('span', 'adv-item-n', title));
   const pend = advPending.get(key);
-  const st = pend ?? status;
-  const pill = advEl('span', 'adv-run-btn' + (st ? ' ' + st.cls : ''), st ? st.label : '▶ Run');
-  if (!pend && status?.open) {
-    // Finished run: the pill opens its call / eval view; the row title still re-runs.
-    pill.title = 'Open this run';
-    pill.addEventListener('click', (ev) => { ev.stopPropagation(); status.open(); });
-  }
+  const running = !!status?.running;
+  let pill;
+  if (pend) pill = advEl('span', 'adv-run-btn ' + pend.cls, pend.label);
+  else if (running && status.runId) {
+    pill = advEl('span', 'adv-run-btn stop', '■ Stop');
+    pill.title = 'Stop this run';
+    pill.addEventListener('click', (ev) => { ev.stopPropagation(); advStop(key, status.runId, status.itemId); });
+  } else if (running) pill = advEl('span', 'adv-run-btn busy', 'Running…');
+  else pill = advEl('span', 'adv-run-btn', '▶ Run');
   top.appendChild(pill);
   it.appendChild(top);
   const detail = advEl('div', 'adv-detail');
@@ -35,19 +39,31 @@ function advExpandable(key, title, fillDetail, run, status) {
     it.classList.toggle('open', open);
     caret.textContent = open ? '▾' : '▸';
   });
-  if (run) top.addEventListener('click', () => advRun(key, run));
+  if (run) top.addEventListener('click', () => { if (!running && !pend) advRun(key, run); });
   return it;
+}
+
+async function advStop(key, runId, itemId) {
+  advPending.set(key, { label: 'Stopping…', cls: 'busy' });
+  advLoadSoon(0);
+  try {
+    const r = await fetch('/advanced/stop', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ runId, itemId }) });
+    const j = await r.json().catch(() => ({}));
+    advAutoOpen.delete(key);
+    if (!r.ok) advPending.set(key, { label: j.error || 'Stop failed', cls: 'fail' });
+  } catch { advPending.set(key, { label: 'Stop failed', cls: 'fail' }); }
+  setTimeout(() => { advPending.delete(key); advLoadSoon(0); }, 2500);
 }
 
 async function advRun(key, run) {
   if (advPending.get(key)?.cls === 'busy') return;
-  advPending.set(key, { label: 'Starting…', cls: 'busy' });
+  advPending.set(key, { label: 'Starting…', cls: 'busy', at: Date.now() });
   advLoadSoon(0);
   try {
     const r = await fetch('/advanced/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(run) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { advPending.set(key, { label: j.error || 'Run failed', cls: 'fail' }); setTimeout(() => { advPending.delete(key); advLoadSoon(0); }, 6000); }
-    else { advPending.set(key, { label: 'Queued', cls: 'busy' }); if (!key.startsWith('suite:')) advAutoOpen.add(key); }
+    else { advPending.set(key, { label: 'Queued', cls: 'busy', at: Date.now() }); if (!key.startsWith('suite:')) advAutoOpen.add(key); }
   } catch { advPending.set(key, { label: 'Run failed', cls: 'fail' }); }
   advLoadSoon(1500);
 }
@@ -56,11 +72,9 @@ const advAutoOpen = new Set(); // runs started here: open their view once they f
 function advLoadSoon(ms) { clearTimeout(advSoon); advSoon = setTimeout(advLoad, ms); }
 
 // Latest status per simulation / eval, from the recent runs in the payload.
-function advRunState(statusText, passed, ended) {
-  if (!ended) return { label: (statusText || 'running').replace(/-/g, ' ') + '…', cls: 'busy' };
-  if (passed === true) return { label: 'PASS · view', cls: 'pass', done: true };
-  if (passed === false) return { label: 'FAIL · view', cls: 'fail', done: true };
-  return { label: (statusText || 'done') + ' · view', cls: '', done: true };
+function advRunState(statusText, passed, ended, runId, itemId) {
+  if (!ended) return { running: true, runId: runId ?? null, itemId: itemId ?? null };
+  return { done: true, passed };
 }
 const ADV_DONE = /^(completed|ended|done|passed|failed|canceled|cancelled|error)$/i;
 function advEl(tag, cls, text) {
@@ -108,10 +122,10 @@ function advRender(d) {
     for (const it of r.items ?? []) {
       if (!it.simulationId || simState[it.simulationId]) continue;
       const done = runDone || ADV_DONE.test(it.status ?? '');
-      simState[it.simulationId] = advRunState(it.status, it.passed, done);
+      simState[it.simulationId] = advRunState(it.status, it.passed, done, r.id, it.id);
       if (it.callId && done) { const cid = it.callId; simState[it.simulationId].open = () => openCallViewer(cid); }
     }
-    for (const sid of r.simulationIds ?? []) if (!simState[sid]) simState[sid] = advRunState(r.status, null, runDone);
+    for (const sid of r.simulationIds ?? []) if (!simState[sid]) simState[sid] = advRunState(r.status, null, runDone, r.id, null);
   }
   const evalState = {};
   for (const r of ev.runs ?? []) {
@@ -124,7 +138,11 @@ function advRender(d) {
   // Once the API shows a real state for an item, drop the local "Starting…" placeholder.
   for (const k of [...advPending.keys()]) {
     const [kind, id] = k.split(':');
-    if ((kind === 'sim' && simState[id]) || (kind === 'eval' && evalState[id])) advPending.delete(k);
+    const st = kind === 'sim' ? simState[id] : kind === 'eval' ? evalState[id] : null;
+    const pend = advPending.get(k);
+    // Clear "Starting…/Queued" once the new run shows as running (or, for very
+    // fast runs, once it has finished — an older finished run doesn't count).
+    if (pend.at && st && (st.running || (st.done && Date.now() - pend.at > 8000))) advPending.delete(k);
     else if (advPending.get(k).cls === 'busy') anyActive = true;
   }
   // Auto-open the view for a run started from this page once it finishes.

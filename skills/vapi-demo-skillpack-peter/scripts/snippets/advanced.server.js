@@ -81,6 +81,7 @@ async function advancedHandler(res) {
         simulationIds: (r.simulations ?? []).map((s) => s.simulationId).filter(Boolean),
         counts: r.itemCounts ?? null,
         items: (runItems[i] ?? []).map((it) => ({
+          id: it.id ?? null,
           simulationId: it.simulationId ?? null,
           callId: it.callId ?? null,
           status: it.status,
@@ -131,6 +132,38 @@ async function advancedHandler(res) {
 // POST /advanced/run {kind: 'simulation'|'suite'|'eval', id}. Only ids that
 // belong to THIS assistant's suite (or this org's evals) are accepted, and the
 // page is public, so runs are rate-limited: 60s cooldown per item, 20/hour total.
+// POST /advanced/stop {runId, itemId?}: cancel a simulation run (or one item of
+// it) — only runs that target this agent. Vapi has no cancel for eval runs.
+async function advancedStopHandler(req, res) {
+  const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
+  const key = process.env.VAPI_API_KEY ?? process.env.VAPI_PRIVATE_KEY;
+  const aid = process.env.ASSISTANT_ID;
+  if (!key || !aid) return send(503, { error: 'not configured' });
+  let body = '';
+  for await (const chunk of req) body += chunk;
+  let runId, itemId;
+  try { ({ runId, itemId } = JSON.parse(body || '{}')); } catch { return send(400, { error: 'bad json' }); }
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(runId ?? '') || (itemId != null && !uuid.test(itemId))) return send(400, { error: 'bad request' });
+  const vapi = async (method, path) => {
+    const r = await fetch('https://api.vapi.ai' + path, { method, headers: { authorization: `Bearer ${key}` } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j?.message ? [].concat(j.message).join('; ') : 'vapi ' + r.status), { status: r.status });
+    return j;
+  };
+  try {
+    const run = await vapi('GET', `/eval/simulation/run/${runId}`);
+    const t = run.target ?? {};
+    if (t.assistantId !== aid && t.assistant?.id !== aid) return send(404, { error: 'not this agent\'s run' });
+    await vapi('PATCH', itemId ? `/eval/simulation/run/${runId}/item/${itemId}` : `/eval/simulation/run/${runId}`);
+    advancedCache = null;
+    send(200, { ok: true });
+  } catch (err) {
+    console.error('advanced stop failed', err);
+    send(502, { error: err.message || 'stop failed' });
+  }
+}
+
 const runGuard = { last: new Map(), hour: [] };
 async function advancedRunHandler(req, res) {
   const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
