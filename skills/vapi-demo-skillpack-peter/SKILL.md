@@ -175,11 +175,16 @@ this file wins** — these are Peter's explicit corrections.
   issues"), not the caller's words. Jacuzzi result: lookup in the call at
   9.4 s while the caller spoke until 15.5 s; no tool round-trip; model
   latency 1.26 s → 0.43 s; scenario passed.
-- **Latency fixes that worked:** Deepgram `flux-general-en` (turn detection;
-  `eotThreshold` 0.75, `eotTimeoutMs` 3000) stopped the agent jumping in on a
-  mid-sentence pause (it had fired the tool while the caller was still
-  talking); the lookup tool `async: true` (no 1.2 s wait on "lookup_started");
-  "one short sentence + ONE question, no recap" in the prompt.
+- **Endpointing: default to Deepgram `nova-3` with NO smart endpointing**
+  (Peter's call). Flux turn detection (`flux-general-en`, eotThreshold 0.75)
+  stopped mid-sentence cut-offs but added 0.4–0.6 s to EVERY reply (reply gap
+  1.6–2.0 s); with the manual pre-fetched mid-sentence, an early endpoint no
+  longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
+  tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
+  + ONE question, no recap" in the prompt.
+- **Call viewer tool lane:** markers within ~10% of the timeline share one
+  label ("name ×3", times in the tooltip); labels in the last quarter anchor
+  leftwards. Separate labels overlapped into unreadable text.
 - **Vapi tool PATCH drops fields you don't send.** `PATCH /tool/:id
   {"async":true}` wiped `server`, so the call went to the assistant webhook and
   the lookup never ran (the agent then answered "per the manual" ungrounded).

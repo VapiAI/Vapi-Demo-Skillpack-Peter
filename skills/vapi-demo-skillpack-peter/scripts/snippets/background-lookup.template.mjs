@@ -7,7 +7,7 @@
 //       if (message?.type === 'transcript') prefetchFromTranscript(message, emitEvent).catch(() => {});
 //   - Vapi: function tool CONFIG.toolName (args query + model, both required, async: true,
 //     server.url = <demo>/tools — when PATCHing a tool send the FULL definition, a partial PATCH drops server),
-//     assistant monitorPlan.controlEnabled = true, transcriber with turn detection (Deepgram flux-general-en),
+//     assistant monitorPlan.controlEnabled = true, transcriber Deepgram nova-3 (no smart endpointing: fastest replies),
 //     prompt: "FIRST check for a [Background lookup result] (often pre-fetched while the caller speaks) and answer
 //     from it; call the tool only when none covers the model + issue".
 //   - .railwayignore: anchor root-only folders (/kb/), never a bare kb/ (it also matches data/kb/).

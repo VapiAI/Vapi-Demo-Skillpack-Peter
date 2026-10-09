@@ -1,7 +1,7 @@
 {
   "name": "vapi-demo-skillpack-peter",
   "displayName": "Vapi-Demo-Skillpack-Peter",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "description": "Peter's add-on learnings for /vapi-demo:vapi-demo — creating the agent first when asked, Railway workspace + custom domain naming, web-call default, showing the last real call instead of dummy replay data, and a one-shot script that applies the default dashboard edits.",
   "author": { "name": "Peter Eames", "email": "peter@vapi.ai" }
 }

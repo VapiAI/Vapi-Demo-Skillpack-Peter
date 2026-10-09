@@ -110,11 +110,24 @@ async function openCallViewer(callId, opts = {}) {
     row.appendChild(area);
     track.appendChild(row);
   }
-  for (const t of d.tools) {
-    const area = track.querySelector('.cv-lane.tools .cv-area');
-    const lbl = advEl('span', 'cv-tool-lbl', t.name);
-    lbl.style.left = (t.at / D) * 100 + '%';
-    area.appendChild(lbl);
+  // One label per cluster of nearby markers (they overlapped into garbage text):
+  // markers within ~10% of the timeline share a label like "name ×3"; the
+  // tooltip lists each one with its time. Labels near the end anchor leftwards.
+  const toolArea = track.querySelector('.cv-lane.tools .cv-area');
+  const groups = [];
+  for (const t of [...d.tools].sort((a, b) => a.at - b.at)) {
+    const g = groups[groups.length - 1];
+    if (g && (t.at - g.items[g.items.length - 1].at) / D < 0.1) g.items.push(t); else groups.push({ items: [t] });
+  }
+  for (const g of groups) {
+    const names = [...new Set(g.items.map((t) => t.name))];
+    const text = names.length === 1 ? names[0] + (g.items.length > 1 ? ' ×' + g.items.length : '') : names[0] + ' +' + (g.items.length - 1);
+    const lbl = advEl('span', 'cv-tool-lbl', text);
+    const pos = g.items[0].at / D;
+    lbl.style.left = pos * 100 + '%';
+    if (pos > 0.75) lbl.classList.add('end');
+    lbl.title = g.items.map((t) => cvFmt(t.at) + '  ' + t.name).join('\n');
+    toolArea.appendChild(lbl);
   }
   const head = advEl('div', 'cv-playhead');
   const headLbl = advEl('span', 'cv-playlbl', '00:00');
