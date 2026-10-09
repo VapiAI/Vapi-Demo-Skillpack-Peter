@@ -64,6 +64,9 @@ function sseHandler(req, res) {
   // delivered ZERO SSE bytes without this while localhost streamed fine).
   res.write(':' + ' '.repeat(2048) + '\n');
   res.write('retry: 3000\n\n');
+  // Boot id first: a page that reconnects after a deploy sees a new id and
+  // reloads itself, so open tabs never keep running an old dashboard.
+  res.write(`data: ${JSON.stringify({ type: 'server.version', data: { v: BOOT } })}\n\n`);
   const last = req.headers['last-event-id'] ?? '';
   const [bootSeen, idRaw] = String(last).split('-');
   const lastId = Number(idRaw);
@@ -263,7 +266,9 @@ async function staticHandler(req, res) {
   const path = normalize(req.url === '/' ? '/index.html' : req.url).replace(/^(\.\.[/\\])+/, '');
   try {
     const file = await readFile(join(PUBLIC_DIR, path));
-    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' });
+    // no-cache: browsers revalidate on every load, so an open tab never keeps
+    // showing an old dashboard after a deploy.
+    res.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream', 'cache-control': 'no-cache' });
     res.end(file);
   } catch {
     res.writeHead(404); res.end('not found');

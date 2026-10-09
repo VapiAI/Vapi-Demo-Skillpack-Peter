@@ -76,9 +76,15 @@ async function openCallViewer(callId, opts = {}) {
 
   // Lanes: talk share per speaker, silence = time nobody is speaking.
   const D = Math.max(d.duration || 0, ...d.segments.map((s) => s.start + s.dur), 1);
+  // Speaking periods: measured from the stereo recording when the server has
+  // them (d.lanes), otherwise the transcript messages' own timings.
+  const spans = d.lanes ?? {
+    assistant: d.segments.filter((s) => s.role === 'assistant').map((s) => [s.start, s.dur]),
+    user: d.segments.filter((s) => s.role === 'user').map((s) => [s.start, s.dur]),
+  };
   const talk = { assistant: 0, user: 0 };
-  for (const s of d.segments) talk[s.role] += Math.min(s.dur, D - s.start);
-  const ivs = d.segments.map((s) => [s.start, Math.min(D, s.start + s.dur)]).sort((a, b) => a[0] - b[0]);
+  for (const role of ['assistant', 'user']) for (const [st, du] of spans[role]) talk[role] += Math.min(du, D - st);
+  const ivs = [...spans.assistant, ...spans.user].map(([st, du]) => [st, Math.min(D, st + du)]).sort((a, b) => a[0] - b[0]);
   const gaps = []; let cur = 0;
   for (const [a, b] of ivs) { if (a > cur + 0.6) gaps.push([cur, a]); cur = Math.max(cur, b); }
   if (D > cur + 0.6) gaps.push([cur, D]);
@@ -87,8 +93,8 @@ async function openCallViewer(callId, opts = {}) {
 
   const tl = advEl('div', 'cv-tl');
   const lanes = [
-    ['assistant', d.assistantName || agentLabel || 'Assistant', pct(talk.assistant), d.segments.filter((s) => s.role === 'assistant').map((s) => [s.start, s.dur])],
-    ['user', 'User', pct(talk.user), d.segments.filter((s) => s.role === 'user').map((s) => [s.start, s.dur])],
+    ['assistant', d.assistantName || agentLabel || 'Assistant', pct(talk.assistant), spans.assistant],
+    ['user', 'User', pct(talk.user), spans.user],
     ['silence', 'Silence', pct(silence), gaps.map(([a, b]) => [a, b - a])],
     ['tools', 'Tool calls', '', d.tools.map((t) => [t.at, 0])],
   ];

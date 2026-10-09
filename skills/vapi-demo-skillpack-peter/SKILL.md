@@ -182,6 +182,16 @@ this file wins** — these are Peter's explicit corrections.
   longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
   tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
   + ONE question, no recap" in the prompt.
+- **Call viewer speaker lanes come from the AUDIO.** Transcript message
+  durations can end seconds early (a caller still talking for 4 s after their
+  message "ended" showed as silence). `/call-detail` reads the stereo recording
+  (`artifact.presignedStereoUrl`; left = caller, right = assistant), 50 ms RMS
+  windows, pauses under 0.7 s merged, cached per call, skipped over ~60 MB →
+  falls back to transcript timings. Transcript text is unchanged.
+- **Open tabs pick up deploys by themselves:** static files are served with
+  `cache-control: no-cache`, and the SSE stream sends the server's boot id
+  (`server.version`) on connect, so a tab that reconnects after a deploy
+  reloads. Before this, an open tab kept showing the old dashboard.
 - **Call viewer tool lane:** markers within ~10% of the timeline share one
   label ("name ×3", times in the tooltip); labels in the last quarter anchor
   leftwards. Separate labels overlapped into unreadable text.
