@@ -7,7 +7,7 @@
 function historyTurns(messages) {
   const turns = [];
   const open = {};
-  for (const m of messages ?? []) {
+  for (const m of Array.isArray(messages) ? messages : []) {
     if ((m.role === 'bot' || m.role === 'user') && typeof m.message === 'string' && m.message.trim()) {
       turns.push({ role: m.role === 'bot' ? 'assistant' : 'user', name: m.assistantName ?? null, text: m.message });
     }

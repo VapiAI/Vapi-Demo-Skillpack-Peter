@@ -93,7 +93,7 @@ async function lastCallHandler(res) {
     });
     const [call] = await r.json();
     if (!call) return send(200, { call: null });
-    const messages = call.artifact?.messages ?? call.messages ?? [];
+    const messages = [call.artifact?.messages, call.messages].find(Array.isArray) ?? [];
     const tools = [];
     for (const m of messages) {
       if (m.role === 'tool_calls') for (const tc of m.toolCalls ?? []) {

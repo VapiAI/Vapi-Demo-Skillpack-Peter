@@ -4,6 +4,8 @@
 // GET /logs?id=<callId> returns one call's turn-by-turn transcript (speech +
 // inline tool calls, via historyTurns). Read-only; list cached 10s.
 let logsCache = null;
+// Vapi can return `messages` as "" instead of an array on some calls.
+const asArray = (...xs) => xs.find(Array.isArray) ?? [];
 async function logsHandler(req, res) {
   const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const key = process.env.VAPI_API_KEY ?? process.env.VAPI_PRIVATE_KEY;
@@ -20,7 +22,7 @@ async function logsHandler(req, res) {
       if (!/^[0-9a-f-]{36}$/i.test(id)) return send(400, { error: 'bad id' });
       const c = await get(`/call/${id}`);
       if (c.assistantId && c.assistantId !== aid) return send(404, { error: 'not this assistant' });
-      return send(200, { id: c.id, turns: historyTurns(c.artifact?.messages ?? c.messages ?? []) });
+      return send(200, { id: c.id, turns: historyTurns(asArray(c.artifact?.messages, c.messages)) });
     }
     if (logsCache && Date.now() - logsCache.at < 10000) return send(200, logsCache.body);
     const so = await get('/structured-output?limit=100').catch(() => ({}));
@@ -28,7 +30,7 @@ async function logsHandler(req, res) {
     const calls = await get(`/call?assistantId=${aid}&limit=25`);
     const body = {
       calls: (calls ?? []).map((c) => {
-        const msgs = c.artifact?.messages ?? c.messages ?? [];
+        const msgs = asArray(c.artifact?.messages, c.messages);
         const start = c.startedAt ? Date.parse(c.startedAt) : null;
         const end = c.endedAt ? Date.parse(c.endedAt) : null;
         return {
