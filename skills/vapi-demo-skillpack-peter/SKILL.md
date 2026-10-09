@@ -238,6 +238,15 @@ this file wins** — these are Peter's explicit corrections.
   a section shows on one machine but not another, test the class in the real
   browser: `getComputedStyle(el).display` is `none` with no matching page
   rule → an extension stylesheet.
+- **Simulations card "Settings · Simulator voice"** (Peter's ask): the AI
+  caller's voice name · provider · version + description, read from the latest
+  tester-side call (`metadata.role: "tester"`; built-in personalities set no
+  voice — Vapi used "Elliot · Vapi · v2"). Choppy simulation audio was NOT the
+  voice: ~0.5 s digital-zero holes appeared only in some runs (22:13+ while
+  several simulations overlapped); 10–30 ms frame drops occur in every
+  simulation, never on real web calls — a Vapi simulation-transport issue to
+  report, not a demo bug. Measure dropouts per channel from the stereo WAV
+  (runs of exact-zero samples between loud audio).
 - **Advanced tab rows RUN on click** (Peter: "when I click them, run the
   simulation or evaluation"). Row title → `POST /advanced/run {kind:
   simulation|suite|eval, id}`; "▶ Run all" runs the whole suite; the ▸ caret

@@ -45,9 +45,25 @@ async function advancedHandler(res) {
       lastValue: soResults[so.id] ? fmtVal(soResults[so.id].result) : null,
     })),
   };
+  // Simulator voice: the AI caller's voice on the latest simulation (the tester
+  // side of a simulation is its own call, metadata.role "tester"). Built-in
+  // personalities set no voice, so this shows what Vapi actually used.
+  let simulatorVoice = null;
+  try {
+    const recent = await get('/call?limit=50') ?? [];
+    const tester = recent.find((c) => c.metadata?.role === 'tester' && (c.assistant?.voice || c.assistantOverrides?.voice));
+    const v = tester && (tester.assistant?.voice ?? tester.assistantOverrides?.voice);
+    if (v) {
+      const info = await voiceLookup(v.provider, v.voiceId, key).catch(() => null);
+      const PROVIDER = { vapi: 'Vapi', cartesia: 'Cartesia', '11labs': 'ElevenLabs', openai: 'OpenAI', azure: 'Azure', deepgram: 'Deepgram', playht: 'PlayHT', 'rime-ai': 'Rime', lmnt: 'LMNT', hume: 'Hume', minimax: 'MiniMax' };
+      simulatorVoice = { provider: PROVIDER[v.provider] ?? v.provider, voiceId: v.voiceId, name: info?.name ?? v.voiceId,
+        description: info?.description ?? null, at: tester.createdAt, model: v.model ?? (v.version ? 'v' + v.version : null) };
+    }
+  } catch {}
   const body = {
     structuredOutputs,
     simulations: {
+      simulatorVoice,
       scenarioCount: (scenarios ?? []).length,
       simulationCount: (simulations ?? []).length,
       personalities: (personalities ?? []).map((p) => p.name),
