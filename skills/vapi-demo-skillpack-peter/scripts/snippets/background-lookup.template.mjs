@@ -219,7 +219,7 @@ export function startManualLookup(args, call, toolCallId, emitEvent) {
       ? hits.map((h, i) => `(${i + 1}) ${h.source} · ${h.section || 'section'}: ${h.text}`).join('\n\n')
       : 'No matching passage in the manuals. Do not guess.';
     const scope = manual ? `${manual} manual + FAQ` : 'FAQ only (model not recognized: ask the caller which model they have)';
-    const content = `[Background lookup result] ${CONFIG.toolName} for "${query}"${model ? ` (model ${model})` : ''} · searched: ${scope}\n${body}`;
+    const content = `[Background lookup result] ${CONFIG.toolName} for "${query}"${model ? ` (model ${model})` : ''} · searched: ${scope}\n${body}\n\nReply rule: give only the NEXT single step from this (about 25 words), then stop and wait for the caller. Don't read the whole procedure.`;
     const url = await controlUrlFor(call);
     let injected = false;
     if (url) {
@@ -313,7 +313,7 @@ export async function prefetchFromTranscript(message, emitEvent) {
   const scope = `${manual.replace(/\.txt$/, '')} manual + FAQ`;
   const body = hits.map((h, i) => `(${i + 1}) ${h.source} · ${h.section || 'section'}: ${h.text}`).join('\n\n');
   const supersede = st.keys.size > 1 ? ' · SUPERSEDES earlier lookup results in this call (the caller gave more detail)' : '';
-  const content = `[Background lookup result] ${CONFIG.toolName} (pre-fetched while the caller was speaking) for "${query.trim()}" (model ${model}) · searched: ${scope}${supersede}\n${body}`;
+  const content = `[Background lookup result] ${CONFIG.toolName} (pre-fetched while the caller was speaking) for "${query.trim()}" (model ${model}) · searched: ${scope}${supersede}\n${body}\n\nReply rule: give only the NEXT single step from this (about 25 words), then stop and wait for the caller. Don't read the whole procedure.`;
   st.url ??= await controlUrlFor(message.call);
   let injected = false;
   if (st.url) {

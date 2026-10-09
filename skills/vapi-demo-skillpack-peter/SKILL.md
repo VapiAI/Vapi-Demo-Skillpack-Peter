@@ -409,7 +409,11 @@ build it before the dashboard:
    caller through steps says "ONE step per turn, about 25 words max, then
    wait for the caller; split multi-part steps; never read a whole procedure
    in one turn". A 56-word / 19 s answer ate a third of a 1-minute simulation
-   and killed the back-and-forth.
+   and killed the back-and-forth. A prompt rule alone wasn't enough (still 59
+   words): put it FIRST in "# Voice style" as "MOST IMPORTANT", and end every
+   injected lookup result with "Reply rule: give only the NEXT single step
+   (~25 words), then wait" (the template does). Result: agent turns ≤28 words,
+   8 short caller turns in 60 s.
 7. Defaults that worked: OpenAI `gpt-4.1`, Deepgram `nova-3`, Cartesia
    `sonic-3.5` voice reused from an existing assistant in the org.
 8. Build the body with python `json.dumps` from a prompt file (no shell
