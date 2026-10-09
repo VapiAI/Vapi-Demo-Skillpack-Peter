@@ -129,9 +129,11 @@ async function openCallViewer(callId, opts = {}) {
     const names = [...new Set(g.items.map((t) => t.name))];
     const text = names.length === 1 ? names[0] + (g.items.length > 1 ? ' ×' + g.items.length : '') : names[0] + ' +' + (g.items.length - 1);
     const lbl = advEl('span', 'cv-tool-lbl', text);
-    const pos = g.items[0].at / D;
-    lbl.style.left = pos * 100 + '%';
-    if (pos > 0.75) lbl.classList.add('end');
+    // Label starts after the LAST bar of the group (or ends before the first,
+    // near the right edge) so no bar cuts through the text.
+    const first = g.items[0].at / D, last = g.items[g.items.length - 1].at / D;
+    if (first > 0.75) { lbl.style.left = first * 100 + '%'; lbl.classList.add('end'); }
+    else lbl.style.left = last * 100 + '%';
     lbl.title = g.items.map((t) => cvFmt(t.at) + '  ' + t.name).join('\n');
     toolArea.appendChild(lbl);
   }
