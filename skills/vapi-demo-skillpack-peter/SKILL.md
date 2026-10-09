@@ -303,9 +303,28 @@ this file wins** — these are Peter's explicit corrections.
   → 302 to Vapi `/call/{id}/mono-recording` signed URL (HIPAA bucket URLs are
   not public). Evals open the same frame with the scripted conversation +
   judge verdict (`GET /eval-run-detail?id=`).
+- **Simulations must sound like normal calls — fewer curveballs** (Peter: the
+  built-ins made it "fake and weird"). Built-in personalities are caricatures
+  (Multitasking Maya stages "sorry, one sec… someone's at my door"; Rambling
+  Roger rambles) and a task that hands over every detail makes the caller
+  recite name + company + callback in the first breath. So, for every demo:
+  - **Custom personalities** in the spec's `"personalities"` (prefix
+    `Natural · `), each ONE mild trait in 2–3 sentences (Prepared pro, Unsure
+    homeowner, Worried caller, In a hurry). `seed-tests.py` appends
+    `NATURAL_BASE` (short turns, open with hello + reason in one sentence,
+    details only when asked, no stage directions/distractions, react
+    naturally, wrap up and end the call) and creates/updates them by name.
+  - **Scenario instructions = SITUATION / GOAL / DETAILS (only if asked)**,
+    never a script of lines to say.
+  - Normal scenarios (the everyday calls the customer gets), not edge-case
+    stunts. Re-running `seed-tests.py` PATCHes existing scenarios and switches
+    each scenario's existing simulation to the new personality (no duplicates).
+  Result on Jacuzzi: "Hey, I've got a 2025 J-three hundred spa showing heat
+  low flow code 16." … "Okay, I'll give that a shot." instead of a recited
+  monologue with fake interruptions.
 - **Set up a simulation suite + evals for every demo agent**: write
   `<project>/configs/tests-spec.json` (4 scenarios, each paired with a
-  built-in tester personality and 2–3 boolean pass checks; 3 chat evals with
+  natural custom tester personality (see above; built-ins only if asked) and 2–3 boolean pass checks; 3 chat evals with
   an LLM-judge criterion — cover the core happy path, a self-service
   redirect, PII refusal, a hardship/escalation path, and hours) and run
   `VAPI_API_KEY=... python3 scripts/seed-tests.py <spec> <assistantId> <out>`.

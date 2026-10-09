@@ -9,9 +9,12 @@ Spec (JSON):
 {
   "suiteName": "...",
   "judgeModel": {"provider": "openai", "model": "gpt-4.1"},          # optional
+  "personalities": [                                                # custom testers (recommended over built-ins)
+    {"name": "Natural · Prepared pro", "behavior": "ONE mild trait, 2-3 sentences"}  # NATURAL_BASE appended
+  ],
   "scenarios": [
-    {"name": "...", "instructions": "what the AI caller does/says",
-     "personality": "Confused Carl",                                  # a built-in tester personality
+    {"name": "...", "instructions": "SITUATION + GOAL + details 'only if asked' (not a script)",
+     "personality": "Natural · Prepared pro",                         # custom or built-in personality
      "checks": [{"name": "snake_case_name", "description": "true if ..."}]}  # boolean, must be true
   ],
   "maxDurationSeconds": 60,                                         # optional; Vapi ends each simulated call at this length
@@ -48,6 +51,23 @@ def call(method, path, body=None):
         sys.exit(f'{method} {path} -> {e.code}: {e.read().decode()[:500]}')
 
 
+# Every custom tester personality gets this base: real callers talk briefly,
+# give details when asked, don't stage distractions, and wrap up. The built-in
+# personalities (Multitasking Maya, Rambling Roger...) are caricatures that made
+# simulations sound fake; prefer custom personalities with ONE mild trait.
+NATURAL_BASE = """
+## HOW YOU TALK (a real person on a phone call)
+- Speak casually and briefly: usually one or two short sentences per turn.
+- Open with a quick hello and why you're calling, in one sentence. Don't list all your details up front; give your name, model, phone number and so on only when the agent asks, or when it naturally comes up.
+- Answer what you were asked, then stop and let the agent talk. One topic at a time.
+- Light, natural fillers only now and then ("um", "okay", "yeah"). No stage directions, no sound effects, no narrating what you're doing, no made-up distractions or background events.
+- Don't repeat yourself or re-explain unless the agent misunderstood you.
+- Say numbers the way a person does: phone numbers in small groups, model names as you'd say them aloud.
+- If the agent gives you steps, react like a real person (e.g. "okay, I'll try that") instead of reading them back.
+- Once your question is answered or a next step is set, thank them briefly, say bye, and end the call.
+"""
+
+
 def listing(path):
     j = call('GET', path + '?limit=100')
     return j if isinstance(j, list) else (j or {}).get('results', [])
@@ -59,12 +79,25 @@ def main():
     out_path = sys.argv[3] if len(sys.argv) > 3 else None
     judge_model = spec.get('judgeModel', {'provider': 'openai', 'model': 'gpt-4.1'})
 
+    created = {'scenarios': [], 'simulations': [], 'suite': None, 'evals': []}
     personalities = {p['name']: p['id'] for p in listing('/eval/simulation/personality')}
+    # Custom tester personalities (created or updated by name). Each one is its
+    # trait text + NATURAL_BASE (set "naturalBase": false to skip the base).
+    for pe in spec.get('personalities', []):
+        behavior = pe['behavior'].strip() + ('\n' + NATURAL_BASE if pe.get('naturalBase', True) else '')
+        body = {'name': pe['name'], 'assistant': {'model': {
+            'provider': 'openai', 'model': pe.get('model', 'gpt-4.1'),
+            'messages': [{'role': 'system', 'content': behavior}], 'tools': [{'type': 'endCall'}]}}}
+        if pe['name'] in personalities:
+            call('PATCH', f"/eval/simulation/personality/{personalities[pe['name']]}", body)
+        else:
+            personalities[pe['name']] = call('POST', '/eval/simulation/personality', body)['id']
+            created.setdefault('personalities', []).append(pe['name'])
     scenarios = {s['name']: s['id'] for s in listing('/eval/simulation/scenario')}
     simulations = {s.get('name'): s['id'] for s in listing('/eval/simulation')}
     suites = {s['name']: s['id'] for s in listing('/eval/simulation/suite')}
     evals = {e.get('name'): e['id'] for e in listing('/eval')}
-    created = {'scenarios': [], 'simulations': [], 'suite': None, 'evals': []}
+    sims_all = listing('/eval/simulation')
 
     # Every simulation is capped at maxDurationSeconds (default 60): Vapi ends the
     # simulated call itself via the scenario's targetOverrides.maxDurationSeconds.
@@ -92,8 +125,15 @@ def main():
         if pname and pname not in personalities:
             sys.exit(f'unknown personality {pname!r}; available: {sorted(personalities)}')
         sim_name = sc['name'] + (f' · {pname}' if pname else '')
-        if sim_name in simulations:
-            sim_ids.append(simulations[sim_name])
+        # Reuse this scenario's existing simulation (switching its personality
+        # if the spec changed it) instead of piling up new ones.
+        existing = simulations.get(sim_name) or next((x['id'] for x in sims_all if x.get('scenarioId') == sid and not str(x.get('name', '')).startswith('Eval · ')), None)
+        if existing:
+            body = {'name': sim_name}
+            if pname:
+                body['personalityId'] = personalities[pname]
+            call('PATCH', f'/eval/simulation/{existing}', body)
+            sim_ids.append(existing)
         else:
             body = {'name': sim_name, 'scenarioId': sid}
             if pname:
