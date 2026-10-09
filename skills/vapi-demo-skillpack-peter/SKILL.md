@@ -185,6 +185,19 @@ this file wins** — these are Peter's explicit corrections.
   longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
   tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
   + ONE question, no recap" in the prompt.
+- **Red "End call" button next to Talk to the agent** (Peter's ask), shown
+  whenever a call is live on the board. A web call started from the page hangs
+  up in the browser; any other live call of this agent (phone, another tab)
+  is ended by `POST /end-call {callId}` → the call's `monitor.controlUrl`
+  `{type:"end-call"}` (needs `monitorPlan.controlEnabled: true`; only this
+  agent's calls). The talk button reads "● On call" meanwhile.
+  `scripts/end_call_patch.py` (run by apply-defaults; works for phone demos too).
+- **Calls must end on silence** (Peter's ask). Every agent gets:
+  `silenceTimeoutSeconds: 15`, `messagePlan: {idleMessages: ["Are you still
+  there?"], idleMessageMaxSpokenCount: 1, idleTimeoutSeconds: 8}`, an
+  `endCallMessage`, the built-in `endCall` tool, and the prompt rule "use
+  endCall after an unanswered 'are you still there?'". (Default 30 s left
+  silent callers hanging; the earlier calls ended on silence-timed-out.)
 - **Call viewer speaker lanes come from the AUDIO.** Transcript message
   durations can end seconds early (a caller still talking for 4 s after their
   message "ended" showed as silence). `/call-detail` reads the stereo recording

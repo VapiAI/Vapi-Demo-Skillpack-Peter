@@ -690,6 +690,8 @@ def main():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import tool_log_patch
     tool_log_patch.apply(a.project_dir)
+    import end_call_patch
+    end_call_patch.apply(a.project_dir)
     print('ok: all default edits applied and verified')
 
 

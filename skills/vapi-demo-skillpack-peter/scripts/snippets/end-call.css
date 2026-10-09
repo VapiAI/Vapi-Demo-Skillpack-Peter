@@ -1,0 +1,10 @@
+.end-btn {
+  font-family: "Foundry Gridnik", "Tomorrow", sans-serif; text-transform: uppercase;
+  font-size: 11px; letter-spacing: 0.1em; padding: 9px 16px; border-radius: 999px;
+  border: 1px solid #e5484d; background: #e5484d; color: #fff;
+  cursor: pointer; transition: opacity 0.15s ease; white-space: nowrap;
+}
+.end-btn:hover { opacity: 0.85; }
+.end-btn:disabled { opacity: 0.6; cursor: progress; }
+.end-btn[hidden] { display: none; }
+.talk-btn.live:disabled { opacity: 1; cursor: default; }
