@@ -244,7 +244,10 @@ this file wins** — these are Peter's explicit corrections.
   voice — Vapi used "Elliot · Vapi · v2"). Below it, **"Agent settings"**: the
   Config setup panel's data condensed to text lines (LLM, Transcriber, Voice,
   Stop speaking, Start speaking — same format), so a simulation reviewer sees
-  the exact agent setup next to the results. Choppy simulation audio was NOT the
+  the exact agent setup next to the results.
+  **Tester personality chips are clickable**: clicking one expands its
+  behavior (the personality's system prompt, `assistant.model.messages`),
+  with its model and "built-in"; click again to collapse. Choppy simulation audio was NOT the
   voice: ~0.5 s digital-zero holes appeared only in some runs (22:13+ while
   several simulations overlapped); 10–30 ms frame drops occur in every
   simulation, never on real web calls — a Vapi simulation-transport issue to

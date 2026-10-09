@@ -4,6 +4,7 @@
 // and refreshes every 30s while visible.
 let advTimer = null;
 const advOpen = new Set(); // expanded rows survive the 30s refresh
+let advPersonaOpen = null; // tester personality whose behavior is expanded
 
 // A row: clicking it RUNS the simulation / eval; the caret expands details.
 // The row button is only "▶ Run", or "■ Stop" while a run is in progress
@@ -263,8 +264,29 @@ function advRender(d) {
   sb.appendChild(cfgBox);
   advRow(sb, 'Scenarios', String(simSuites.reduce((n, su) => n + su.simulations.length, 0)));
   const chips = advEl('div', 'adv-chips');
-  for (const p of sim.personalities ?? []) chips.appendChild(advEl('span', 'adv-chip', p));
-  if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); }
+  // Click a personality to expand its behavior (the tester's instructions);
+  // click again to collapse. The open one survives the 30 s refresh.
+  const pDetails = new Map((sim.personalityDetails ?? []).map((x) => [x.name, x]));
+  const pBox = advEl('div', 'adv-persona');
+  const pShow = () => {
+    pBox.innerHTML = '';
+    const d = pDetails.get(advPersonaOpen);
+    pBox.hidden = !d;
+    chips.querySelectorAll('.adv-chip').forEach((c) => c.classList.toggle('on', c.textContent === advPersonaOpen));
+    if (!d) return;
+    const head = advEl('div', 'adv-persona-h');
+    head.appendChild(advEl('b', null, d.name));
+    head.appendChild(document.createTextNode(' · Behavior' + (d.model ? ' · ' + d.model : '') + (d.builtIn ? ' · built-in' : '')));
+    pBox.appendChild(head);
+    pBox.appendChild(advEl('div', 'adv-quote', d.behavior || 'No behavior text on this personality.'));
+  };
+  for (const p of sim.personalities ?? []) {
+    const chip = advEl('span', 'adv-chip adv-chip-click', p);
+    chip.title = 'Show behavior';
+    chip.addEventListener('click', () => { advPersonaOpen = advPersonaOpen === p ? null : p; pShow(); });
+    chips.appendChild(chip);
+  }
+  if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); sb.appendChild(pBox); pShow(); }
   for (const su of simSuites) {
     suiteBlock(sb, su, 'Suite · ' + su.name + ' · voice', {
       title: (sm) => sm.name,

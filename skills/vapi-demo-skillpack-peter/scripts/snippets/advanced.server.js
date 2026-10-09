@@ -67,6 +67,13 @@ async function advancedHandler(res) {
       scenarioCount: (scenarios ?? []).length,
       simulationCount: (simulations ?? []).length,
       personalities: (personalities ?? []).map((p) => p.name),
+      // Each tester personality's behavior (its system prompt), shown when a chip is clicked.
+      personalityDetails: (personalities ?? []).map((p) => ({
+        name: p.name,
+        behavior: (p.assistant?.model?.messages ?? []).find((m) => m.role === 'system')?.content ?? null,
+        model: [p.assistant?.model?.provider, p.assistant?.model?.model].filter(Boolean).join(' · ') || null,
+        builtIn: /^a0000000-/.test(p.id ?? ''),
+      })),
       // Suites assigned to this assistant, with their simulations by name.
       suites: (suitesAll ?? [])
         .filter((su) => (su.targetAssignments ?? []).some((t) => t.targetId === aid))
