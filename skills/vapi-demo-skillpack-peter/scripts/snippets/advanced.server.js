@@ -69,6 +69,7 @@ async function advancedHandler(res) {
       personalities: (personalities ?? []).map((p) => p.name),
       // Each tester personality's behavior (its system prompt), shown when a chip is clicked.
       personalityDetails: (personalities ?? []).map((p) => ({
+        id: p.id,
         name: p.name,
         behavior: (p.assistant?.model?.messages ?? []).find((m) => m.role === 'system')?.content ?? null,
         model: [p.assistant?.model?.provider, p.assistant?.model?.model].filter(Boolean).join(' · ') || null,
@@ -89,6 +90,7 @@ async function advancedHandler(res) {
               name: sm.name ?? `${sc.name ?? 'Scenario'}${sm.personalityId ? ' · ' + (personalityName[sm.personalityId] ?? '') : ''}`,
               scenario: sc.name ?? null,
               personality: personalityName[sm.personalityId] ?? null,
+              personalityId: sm.personalityId ?? null,
               instructions: sc.instructions ?? null,
               checks: (sc.evaluations ?? []).map((e) => ({
                 name: e.structuredOutput?.name ?? e.structuredOutputId ?? 'check',
@@ -184,6 +186,43 @@ async function advancedStopHandler(req, res) {
   } catch (err) {
     console.error('advanced stop failed', err);
     send(502, { error: err.message || 'stop failed' });
+  }
+}
+
+// POST /advanced/personality {simulationId, personalityId}: switch the tester
+// personality of a simulation in this agent's suite (and rename it
+// "<scenario> · <personality>"). The next run uses the new personality.
+async function advancedPersonalityHandler(req, res) {
+  const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
+  const key = process.env.VAPI_API_KEY ?? process.env.VAPI_PRIVATE_KEY;
+  const aid = process.env.ASSISTANT_ID;
+  if (!key || !aid) return send(503, { error: 'not configured' });
+  let body = '';
+  for await (const chunk of req) body += chunk;
+  let simulationId, personalityId;
+  try { ({ simulationId, personalityId } = JSON.parse(body || '{}')); } catch { return send(400, { error: 'bad json' }); }
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(simulationId ?? '') || !uuid.test(personalityId ?? '')) return send(400, { error: 'bad request' });
+  const vapi = async (method, path, payload) => {
+    const r = await fetch('https://api.vapi.ai' + path, { method, headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' }, body: payload ? JSON.stringify(payload) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j?.message ? [].concat(j.message).join('; ') : 'vapi ' + r.status), { status: r.status });
+    return Array.isArray(j) ? j : (j?.results ?? j);
+  };
+  try {
+    const suites = (await vapi('GET', '/eval/simulation/suite?limit=100') ?? []).filter((su) => (su.targetAssignments ?? []).some((t) => t.targetId === aid));
+    if (!suites.some((su) => (su.simulationIds ?? []).includes(simulationId))) return send(404, { error: 'not part of this agent\'s suite' });
+    const persona = (await vapi('GET', '/eval/simulation/personality?limit=100') ?? []).find((x) => x.id === personalityId);
+    if (!persona) return send(404, { error: 'unknown personality' });
+    const sim = await vapi('GET', `/eval/simulation/${simulationId}`);
+    const scenario = await vapi('GET', `/eval/simulation/scenario/${sim.scenarioId}`).catch(() => null);
+    const name = (scenario?.name ?? String(sim.name ?? 'Simulation').replace(/\s*·\s*[^·]+$/, '')) + ' · ' + persona.name;
+    await vapi('PATCH', `/eval/simulation/${simulationId}`, { personalityId, name });
+    advancedCache = null;
+    send(200, { ok: true, name });
+  } catch (err) {
+    console.error('advanced personality change failed', err);
+    send(502, { error: err.message || 'change failed' });
   }
 }
 

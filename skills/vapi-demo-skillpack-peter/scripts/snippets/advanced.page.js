@@ -128,6 +128,38 @@ function advAgentSettings(cfg) {
   return out.filter(([, t]) => t);
 }
 
+// "Tester personality" row with a dropdown: picking another personality
+// switches this simulation's AI caller (POST /advanced/personality).
+function advPersonaPicker(box, sm, people) {
+  const row = advEl('div', 'live-row');
+  row.appendChild(advEl('span', 'k', 'Tester personality'));
+  const sel = document.createElement('select');
+  sel.className = 'adv-persona-sel';
+  sel.title = 'Change the AI caller for this simulation';
+  for (const p of people) {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name; o.selected = p.id === sm.personalityId || (!sm.personalityId && p.name === sm.personality);
+    sel.appendChild(o);
+  }
+  if (!people.length) { row.appendChild(advEl('span', 'v', sm.personality)); box.appendChild(row); return; }
+  const note = advEl('span', 'adv-persona-note');
+  sel.addEventListener('click', (ev) => ev.stopPropagation());
+  sel.addEventListener('change', async (ev) => {
+    ev.stopPropagation();
+    sel.disabled = true; note.textContent = 'Saving…';
+    try {
+      const r = await fetch('/advanced/personality', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ simulationId: sm.id, personalityId: sel.value }) });
+      const j = await r.json().catch(() => ({}));
+      note.textContent = r.ok ? 'Saved' : (j.error || 'Save failed');
+    } catch { note.textContent = 'Save failed'; }
+    advLoadSoon(600);
+  });
+  const right = advEl('span', 'v');
+  right.appendChild(note); right.appendChild(sel);
+  row.appendChild(right);
+  box.appendChild(row);
+}
+
 function advRender(d) {
   const grid = $('advGrid');
   grid.innerHTML = '';
@@ -291,7 +323,7 @@ function advRender(d) {
     suiteBlock(sb, su, 'Suite · ' + su.name + ' · voice', {
       title: (sm) => sm.name,
       fill: (d, sm) => checksFill(d, sm, (dd) => {
-        if (sm.personality) advRow(dd, 'Tester personality', sm.personality);
+        if (sm.personality) advPersonaPicker(dd, sm, sim.personalityDetails ?? []);
         if (sm.instructions) { dd.appendChild(advEl('div', 'prompt-k adv-k', 'What the AI caller does')); dd.appendChild(advEl('div', 'adv-quote', sm.instructions)); }
       }),
     });

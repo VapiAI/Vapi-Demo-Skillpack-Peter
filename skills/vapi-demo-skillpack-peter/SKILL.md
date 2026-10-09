@@ -247,7 +247,11 @@ this file wins** — these are Peter's explicit corrections.
   the exact agent setup next to the results.
   **Tester personality chips are clickable**: clicking one expands its
   behavior (the personality's system prompt, `assistant.model.messages`),
-  with its model and "built-in"; click again to collapse. Choppy simulation audio was NOT the
+  with its model and "built-in"; click again to collapse.
+  **Each simulation's "Tester personality" is a dropdown** (expanded row):
+  picking one → `POST /advanced/personality {simulationId, personalityId}` →
+  `PATCH /eval/simulation/{id} {personalityId, name: "<scenario> · <persona>"}`
+  (only simulations in this agent's suites); the next run uses it. Choppy simulation audio was NOT the
   voice: ~0.5 s digital-zero holes appeared only in some runs (22:13+ while
   several simulations overlapped); 10–30 ms frame drops occur in every
   simulation, never on real web calls — a Vapi simulation-transport issue to
