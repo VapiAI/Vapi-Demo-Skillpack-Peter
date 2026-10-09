@@ -370,10 +370,12 @@ build it before the dashboard:
    each part must NOT sound like ("eh-money", "uesa", "period"), and "never
    write the raw spelling in a reply". Use the same form in `firstMessage`.
    Peter's exact ask for eMoneyUSA: "e-money USA dot com".
-   **Names and one-word sentences**: the model wrote "No problem. Sam. Next."
-   and the voice said "Sam" oddly. Add to every prompt: use the caller's name
-   rarely and inside a sentence with a comma ("No problem, Sam."), never as
-   its own sentence; no one-word sentences ("Next." / "No.").
+   **Don't prioritize names; lead with the relevant information** (Peter's
+   ask). The model wrote "No problem. Sam. Next." and the voice said "Sam"
+   oddly. Every prompt: skip thanks/name-checks ("Thanks, Sam"); answer, give
+   the next step or ask the one needed question; use the name only when needed
+   (e.g. confirming it for a case), inside a sentence with a comma; no
+   one-word sentences ("Next." / "No.").
 7. Defaults that worked: OpenAI `gpt-4.1`, Deepgram `nova-3`, Cartesia
    `sonic-3.5` voice reused from an existing assistant in the org.
 8. Build the body with python `json.dumps` from a prompt file (no shell
