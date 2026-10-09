@@ -1,0 +1,12 @@
+{
+  "name": "vapi-demo-skillpack-peter-marketplace",
+  "owner": { "name": "Peter Eames", "email": "peter@vapi.ai" },
+  "plugins": [
+    {
+      "name": "vapi-demo-skillpack-peter",
+      "displayName": "Vapi-Demo-Skillpack-Peter",
+      "source": "./",
+      "description": "Peter's add-on learnings for /vapi-demo:vapi-demo — agent creation, Railway domain naming, web-call default, turn-by-turn transcript with inline tool calls, live call data, Advanced (simulations, evals, structured outputs) and Logs tabs, plus a verified default-edits script."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+/* In-line tabs: Live board | Advanced (simulations + evaluations). */
+.tabs { display: flex; gap: 6px; margin: 2px 0 -4px; }
+.tab-btn {
+  font-family: "Foundry Gridnik", "Tomorrow", sans-serif; text-transform: uppercase;
+  font-size: 11px; letter-spacing: 0.1em; padding: 7px 16px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel-bg); color: var(--text-muted); cursor: pointer;
+}
+.tab-btn.on { border-color: var(--mint); color: var(--text); background: var(--bg); }
+main[hidden], .advanced[hidden] { display: none !important; }
+.advanced { flex: 1; min-height: 0; overflow-y: auto; }
+.adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 980px) { .adv-grid { grid-template-columns: 1fr; } }
+.adv-card .body { max-height: none; overflow: visible; }
+.adv-sub { color: var(--text-muted); font-size: 12.5px; line-height: 1.45; }
+.adv-k { margin-top: 10px; }
+.adv-empty { color: var(--text-muted); font-size: 13px; padding: 10px 2px; }
+.adv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.adv-chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); }
+.adv-run { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 8px 2px 4px; border-top: 1px dashed var(--line); }
+.adv-run-t { font-weight: 600; }
+.adv-run-c { color: var(--text-muted); }
+.adv-item { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: var(--bg); display: flex; flex-direction: column; gap: 5px; }
+.adv-item-top { display: flex; align-items: center; gap: 8px; }
+.adv-item-n { font-weight: 600; font-size: 13.5px; }
+.adv-eval { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; color: var(--text-muted); }
+.adv-sugg { font-size: 12.5px; color: var(--text-muted); }
+.adv-badge {
+  font-family: "Foundry Gridnik", "Tomorrow", sans-serif; font-size: 10px; letter-spacing: 0.08em;
+  padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-muted); white-space: nowrap;
+}
+.adv-badge.pass { border-color: var(--mint); color: var(--mint); }
+.adv-badge.fail { border-color: #e5484d; color: #e5484d; }
+.adv-so-val { font-size: 13px; font-weight: 600; word-break: break-word; }

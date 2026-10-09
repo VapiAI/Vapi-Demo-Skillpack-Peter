@@ -1,0 +1,258 @@
+---
+name: vapi-demo-skillpack-peter
+description: Peter's add-on learnings for /vapi-demo:vapi-demo. Use ALONGSIDE vapi-demo whenever Peter builds a Vapi demo — "make a demo for this assistant", "make an agent that does this", "add it to the railway page", "demo dashboard", "name the domain …". Covers creating the assistant first when asked (vapi-demo refuses to), Peter's org/Railway/folder defaults, custom Railway domain naming, web-call as the default, showing the last REAL call instead of try-it.sh dummy data, and a script that applies all default dashboard edits in one verified pass. Where this conflicts with vapi-demo, this wins.
+---
+
+# Vapi Demo Skillpack (Peter)
+
+A companion to `/vapi-demo:vapi-demo`. Load that skill too and follow its
+phases; this file only adds what was learned building demos for Peter. **Where
+the two disagree, this file wins** — these are Peter's explicit corrections.
+
+## 0. Defaults (don't ask, just use)
+
+- **Vapi org + key:** read Peter's auto-memory (`reference_default-vapi-org.md`)
+  for the default org id and private key. Never ask "assistant or squad"; never
+  re-ask for a key memory already holds. Confirm `orgId` on the first API
+  response matches. Never hardcode the key in this plugin, in project files, or
+  in git — only in Railway variables and inline per command.
+- **Project folder:** `~/Desktop/Vapi Demos/<demo-name>/` (never `Claude Apps`).
+- **Railway workspace:** `"Vapi Demos"` (personal trial is expired).
+- **How calls reach the agent:** the web-call button, unless Peter gives a
+  phone number. Don't stall on this question.
+- **Browser tab title: ALWAYS "<Customer> x Vapi: Voice AI Demo"** (e.g.
+  "eMoneyUSA x Vapi: Voice AI Demo"). Pass `--customer "<Customer>"` using the
+  customer's own brand spelling; the script builds the title. Only without a
+  customer does it fall back to "Vapi Voice AI Demo". Don't pass `--title`
+  unless Peter asks for something else.
+- **Right panel: ALWAYS "Agent prompt"** — the assistant's first message and
+  system prompt, read live from Vapi (`GET /agent-prompt`). Peter asked for
+  this in place of the "Call outcome" report panel, which only ever showed
+  "Ended: customer ended call". Never use `report-panel.html` or the ride
+  panel. For a squad, ask whether he wants the squad panel or per-member prompts.
+- **Tool calls render INLINE in the transcript**, as a compact card
+  ("Tool call · <name>", args, running→done, result) exactly where they
+  happened between speech bubbles — live and when rebuilt from history
+  (server `historyTurns()` keeps tool calls in order, results paired per name).
+  There is NO separate tool-calls panel any more. A history update with no
+  speech must never rebuild (wipe) the transcript.
+- **Panel 03 is "Live call data"**, re-rendered every second: Status,
+  Duration (ticking; Vapi's startedAt/endedAt when known), Turns (total +
+  caller/assistant), Cost ($, 4 dp), Cost per hour (cost ÷ duration,
+  "$5.73/hr"), Tokens (total + in/out), Tool calls,
+  Call ID, Ended reason. Cost/tokens come from `GET /call-stats?id=` →
+  `GET /call/:id` (`cost`, `costBreakdown.llmPromptTokens/llmCompletionTokens`),
+  1s server cache, polling stops once an ended call has its final cost.
+  Vapi only publishes cost/tokens AFTER the call ends (verified live), so
+  they read "—" mid-call and fill in at hangup — expected, not a bug.
+- **Middle column: ALWAYS "Config setup" on top + "Live call data"
+  below** (config sizes to content, live data takes the rest). Config setup shows one compact row each for LLM,
+  Transcriber, and Voice, read live from the assistant via the same
+  `/agent-prompt` route. **The Voice row shows the voice by NAME and
+  description, like the Vapi dashboard picker** ("Clementine - Hospitable
+  Host" / "Warm with a friendly cadence…"), resolved server-side from
+  `GET /voice-library/<provider>?limit=1000&page=N` matching `providerId`
+  (cached per voice id). A raw voice id alone is not acceptable to Peter; it
+  is only the fallback when the lookup finds nothing.
+  Below Voice, a small-text **Stop speaking plan** line: "Words 0 · Voice
+  0.2s · Back off 1s" from `assistant.stopSpeakingPlan` (numWords,
+  voiceSeconds, backoffSeconds). When unset, show Vapi's dashboard defaults
+  (0 / 0.2s / 1s) and append "· defaults" — never leave it blank.
+  Under it, a **Start speaking plan** line in the exact same format: "Wait
+  0.4s · Smart endpointing off · Punctuation 0.1s · No punctuation 1.5s ·
+  Number 0.5s" from `assistant.startSpeakingPlan` (waitSeconds,
+  smartEndpointingPlan.provider, transcriptionEndpointingPlan.*), with the
+  same Vapi defaults + "· defaults" when unset. Config setup sizes to its
+  content (never scrolls); Tool calls takes the remaining height (min 120px). Peter asked to
+  keep tool calls, just smaller and under the config. Layout: 01 Live
+  transcript · 02 Config setup / 03 Tool calls · 04 Agent prompt.
+
+- **Live transcript: ALWAYS turn by turn.** One bubble per speaker turn —
+  every fragment, partial and whole-utterance final from the same speaker
+  merges into the current bubble (the stock renderer split one greeting into
+  six bubbles: "Thanks for calling…Our" / "our t" / "is out of the office…").
+  Conversation-update history is merged the same way. A small centred marker
+  sits between turns: "Assistant turn ended · Caller turn started". Test it
+  locally with `scripts/try-fragments.sh http://localhost:<port>` (replays
+  that exact fragmented greeting) — never against the deployed URL.
+
+- **Web addresses read as written, not as spoken.** The transcript shows
+  "dot com" as ".com" (also .net/.org/.io/.ai/.co/.us/.gov/.edu), display-only.
+  ALWAYS pass the customer's domain with `--domain <domain>` (repeatable) so
+  spelled-out speech like "e money u s a dot com" displays as "emoneyusa.com".
+
+- **In-line 2nd page "Advanced" (tabs under the header: Live | Advanced)**
+  showing Simulations, Evaluations and **Structured outputs** for this agent
+  (Peter trimmed the latency/cost/analysis cards — don't add them back
+  unasked). Structured outputs = every `/structured-output` whose
+  `assistantIds` includes ASSISTANT_ID (name, type, schema type/fields), each
+  with the value from the latest call's `artifact.structuredOutputs[<id>]`.
+  When Peter asks to create them: POST `/structured-output` with
+  `assistantIds: [<id>]` AND PATCH the assistant's
+  `artifactPlan.structuredOutputIds` (that is what actually triggers
+  extraction after each call; save the prior artifactPlan first). Default set
+  for a self-service agent: `call_reason` (enum string),
+  `directed_to_self_service` (bool), `needs_human_follow_up` (bool),
+  `caller_callback` (object: name, callback_number — only if volunteered).
+  Spec lives in `<project>/configs/structured-outputs-spec.json`. Server route
+  `GET /advanced` aggregates Vapi's Simulations API (`/eval/simulation`,
+  `/scenario`, `/personality`, `/suite`, `/run` + `/run/{id}/item`) and Evals
+  (`/eval`, `/eval/run`), filtered to suites/runs targeting ASSISTANT_ID,
+  cached 15s; the page refreshes every 30s while the tab is open.
+- **3rd in-line tab "Logs"** (tabs: Live | Advanced | Logs): call log for
+  this agent, newest first, from `GET /logs` (→ `/call?assistantId=…&limit=25`,
+  cached 10s): time, type chip (web/inbound), duration, ended reason, turns ·
+  tools, cost, first caller line, structured-output chips. Click a row →
+  `GET /logs?id=<callId>` → turn-by-turn transcript with inline tool calls
+  (same `historyTurns()` + `displayText()` as the live board). Refreshes
+  every 30s while open.
+- **Set up a simulation suite + evals for every demo agent**: write
+  `<project>/configs/tests-spec.json` (4 scenarios, each paired with a
+  built-in tester personality and 2–3 boolean pass checks; 3 chat evals with
+  an LLM-judge criterion — cover the core happy path, a self-service
+  redirect, PII refusal, a hardship/escalation path, and hours) and run
+  `VAPI_API_KEY=... python3 scripts/seed-tests.py <spec> <assistantId> <out>`.
+  It only CREATES definitions (idempotent by name); never start a simulation
+  or eval run without asking — runs cost money and place AI test calls.
+  Python urllib needs a User-Agent header or Cloudflare returns 403 / 1010.
+
+## 0b. Customer logo + Salesforce record (every demo)
+
+The header ALWAYS shows the customer's logo to the LEFT of the agent label
+(Vapi wordmark │ customer logo + agent label). Before building:
+
+1. **Ask Peter which Salesforce Account this demo belongs to** (name or Id) —
+   don't guess. Name searches mislead: "emoney" matched *eMoney Advisor*
+   (emoneyadvisor.com), a different company from eMoneyUSA. Confirm with
+   `SELECT Id, Name, Website, Type, Owner.Name FROM Account WHERE Id = '…'`
+   (Salesforce MCP only — never ZoomInfo).
+2. **Get the logo from the account's Website** (or the customer site Peter
+   names): fetch the homepage, find the header/navbar `<img>` whose src or alt
+   says logo (prefer the full-color/dark-on-light SVG, not the white footer
+   one), download it into `<project>/brand/customer-logo.svg` (add `brand/`
+   to `.railwayignore`), and confirm it's a real image with no
+   `<script>` / `on*=` handlers.
+3. Pass it to the script: `--logo "<project>/brand/customer-logo.svg"`. It's
+   inlined as a data URI (page stays self-contained), 22px tall, max 160px
+   wide, and the label is `white-space: nowrap` so the header doesn't wrap.
+4. If no account exists or no logo can be found, say so and ask Peter for a
+   logo file rather than shipping without one.
+
+## 1. "Make an agent that does this" — create it first
+
+vapi-demo refuses to create or prompt agents. When Peter asks for an agent,
+build it before the dashboard:
+
+1. If "this" isn't attached/described, ask for it — nothing else.
+2. **Research the customer's real facts** before writing: fetch their website
+   and its `/faq` (WebFetch). Fill phone numbers, hours, portal/apply URLs,
+   button labels, funding timing, state notices from the source — and list what
+   the site does NOT say (eligibility, documents, fraud line) so the prompt
+   tells the agent not to guess.
+3. Prompt structure that worked: Identity + goals in order → explicit "you
+   cannot look up accounts / transfer / take payments" → voice style → Key facts
+   → numbered call types → "when the team is next available" rules → Rules
+   (never collect SSN/account/card/DOB; no promises of approval, rates, amounts,
+   funding dates; no advice; 911 for safety) → Ending the call.
+4. **Current time in the caller's zone** without any tool, via Vapi liquid:
+   `{{"now" | date: "%A, %B %d, %Y at %I:%M %p", "America/Chicago"}}`, plus
+   rules mapping day/time → next opening. It can't know holidays; tell it to
+   say "the next business day".
+5. **"No tool calls, no integrations" still means add the built-in `endCall`**
+   (`model.tools: [{"type":"endCall"}]`) — Peter asked for it explicitly. It
+   calls nothing external. Without it the agent can't hang up and calls end on
+   `silence-timed-out`. Tell the prompt when to use it.
+6. **Write brand names and URLs for the voice**: first message "e Money U S A",
+   URLs as "e money u s a dot com". **Every caller-facing mention in the
+   prompt must use the spoken form** — mixing in the written form
+   ("go to emoneyusa.com") makes the model improvise ("e money uesa dot com").
+   Keep the written domain only in one reference line, plus an explicit rule:
+   'ALWAYS write the website exactly as "e money u s a dot com" … never
+   "emoneyusa.com", never say "period".' Speech stays "dot com"; only the
+   DASHBOARD shows ".com" (display-only, see `--domain`).
+   **Add a "# Pronunciation" section** for every brand name / domain the agent
+   says: one canonical written form used in all replies (e.g. "e-money U-S-A
+   dot com"), a phonetic line ("EE-muh-nee  YOO - ESS - AY  dot  KOM"), what
+   each part must NOT sound like ("eh-money", "uesa", "period"), and "never
+   write the raw spelling in a reply". Use the same form in `firstMessage`.
+   Peter's exact ask for eMoneyUSA: "e-money USA dot com".
+7. Defaults that worked: OpenAI `gpt-4.1`, Deepgram `nova-3`, Cartesia
+   `sonic-3.5` voice reused from an existing assistant in the org.
+8. Build the body with python `json.dumps` from a prompt file (no shell
+   escaping of the liquid braces), POST `/assistant`, then confirm `orgId`,
+   `tools`, and that no `[` placeholders remain in the prompt.
+
+## 2. Scaffold + default edits in ONE verified pass
+
+After vapi-demo Default path step 3 (copy skeleton + example into the project),
+run:
+
+    python3 "${CLAUDE_PLUGIN_ROOT}/skills/vapi-demo-skillpack-peter/scripts/apply-defaults.py" \
+      "<project_dir>" --brand "<header agent label>" --customer "<Customer>" \
+      --logo "<project_dir>/brand/customer-logo.svg" --domain <customer-domain.com>
+    # add --phone "+1 (555) 123-4567" to keep a phone pill instead of the web-call button
+
+It applies the rebrand (title, header label, Sarah → Assistant), the
+"Agent prompt" right panel (`/agent-prompt` route + loader; it is excluded
+from call resets because it describes the agent, not the call) with ride
+cleanup, the split middle column (Config setup over a smaller Tool calls), the web-call button (markup, script, style), and the `/last-call`
+route + page loader (section 4) — then greps a
+marker for every part and fails loudly on anything missing. It was diffed
+byte-for-byte against a deployed, working demo. Also add `.railwayignore`
+(`configs/`, `*.log`, `demo.env`) and the `package.json` from vapi-demo step 8.
+
+Project files stay generic (vapi-demo's no-customer-names rule) — the customer
+name appears only at runtime via the agent, and in the domain if Peter names it.
+
+## 3. Railway: deploy + domain naming
+
+Order that works (vapi-demo step 8 is slightly different here):
+
+    railway init --name <demo-name> --workspace "Vapi Demos"
+    railway up --detach                       # first up creates the service; its id is in the build-logs URL
+    railway service link <service-id>
+    railway domain                            # generates <name>-production.up.railway.app
+    railway domain status <domain-id>         # prints the URL
+    railway variables --set VAPI_ORG_ID=... --set VAPI_PRIVATE_KEY=... --set VAPI_API_KEY=... \
+                      --set ASSISTANT_ID=... --set PUBLIC_ORIGIN=https://<final-domain>
+
+**Ask Peter for the domain name up front** (convention he used:
+`<customer>-vapi-voiceai-demo.up.railway.app`). If it's renamed later:
+
+    railway domain update <domain-id> --domain <new-name>.up.railway.app
+
+A rename REPLACES the old host (it 404s afterwards), so in the same step:
+re-set `PUBLIC_ORIGIN` to the new origin (redeploys; decode a `/webcall-token`
+JWT and check `allowedOrigins`), and PATCH the assistant's `server.url` to
+`https://<new>/vapi`. Missing either breaks the button or the panels silently.
+
+Wiring the assistant: if its `server.url` was null (fresh assistant), Peter's
+"add it to the page" is the approval; still save `configs/assistant-before.json`.
+
+## 4. Never leave dummy data on a deployed board
+
+`try-it.sh` events go into the server's in-memory replay buffer and are
+replayed to EVERY page that opens afterwards. Peter saw the ride-booking
+dummy transcript on his live demo and asked for it gone. Rules:
+
+- Run `try-it.sh` against **localhost only**. If you must probe the deployed
+  `/vapi`, redeploy (`railway up --detach`) afterwards to clear the buffer.
+- The board should show the **last real call** when opened: `/last-call`
+  (added by the script) fetches `GET /call?assistantId=…&limit=1` with
+  `VAPI_API_KEY` and the page renders its transcript and tool calls with the
+  header reading "Last call <id>". A new live call takes over the
+  board as usual. Test it locally by pointing `ASSISTANT_ID` at an assistant
+  that already has calls.
+- The fetch takes 1–2s: screenshot twice before concluding it's broken.
+
+## 5. Verification notes
+
+- Playwright's chromium is often not installed; use the built-in browser pane
+  (`preview_start` with the URL) for screenshots instead of installing.
+- Pass/fail is the panels moving on a real call, not the web call connecting.
+- After the first real call, read its transcript (`/last-call` or
+  `GET /call/:id`) and flag agent issues to Peter — e.g. timing promises
+  ("funds as soon as today"), mispronounced URLs, `silence-timed-out` instead of
+  `endCall`. Offer prompt fixes; don't silently change the agent.
+- Don't try to persist secrets to other files on disk (auto mode blocks it,
+  rightly). Memory + Railway variables are enough.
