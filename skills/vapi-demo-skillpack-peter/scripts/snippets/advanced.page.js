@@ -136,93 +136,136 @@ function advRender(d) {
   clearInterval(advTimer);
   advTimer = setInterval(advLoad, anyActive ? 5000 : 30000);
 
-  // 1. Simulations
-  const [simCard, sb] = advCard('Simulations', 'AI callers run scripted scenarios against this agent and score the result.');
-  advRow(sb, 'Scenarios', String(sim.scenarioCount ?? 0));
-  advRow(sb, 'Simulations', String(sim.simulationCount ?? 0));
-  const chips = advEl('div', 'adv-chips');
-  for (const p of sim.personalities ?? []) chips.appendChild(advEl('span', 'adv-chip', p));
-  if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); }
-  for (const su of sim.suites ?? []) {
+  // Suites whose name contains "· evaluations" are the VOICE evaluations
+  // (scripted caller line + pass criterion, run as voice simulations);
+  // everything else is the scenario/personality simulation suite.
+  const isEvalSuite = (su) => /·\s*evaluations/i.test(su.name);
+  const simSuites = (sim.suites ?? []).filter((su) => !isEvalSuite(su));
+  const evalSuites = (sim.suites ?? []).filter(isEvalSuite);
+  const idsOf = (suites) => new Set(suites.flatMap((su) => su.simulations.map((x) => x.id)));
+
+  function suiteBlock(box, su, label, detailFor) {
     const head = advEl('div', 'adv-suite-head');
-    head.appendChild(advEl('span', 'prompt-k adv-k', 'Suite · ' + su.name + ' · voice'));
+    head.appendChild(advEl('span', 'prompt-k adv-k', label));
     const pendSuite = advPending.get('suite:' + su.id);
     const all = advEl('span', 'adv-run-btn' + (pendSuite ? ' ' + pendSuite.cls : ''), pendSuite ? pendSuite.label : '▶ Run all');
     all.addEventListener('click', () => advRun('suite:' + su.id, { kind: 'suite', id: su.id }));
     head.appendChild(all);
-    sb.appendChild(head);
+    box.appendChild(head);
     for (const sm of su.simulations) {
-      sb.appendChild(advExpandable('sim:' + sm.id, sm.name, (d) => {
-        if (sm.personality) advRow(d, 'Tester personality', sm.personality);
-        if (sm.instructions) { d.appendChild(advEl('div', 'prompt-k adv-k', 'What the AI caller does')); d.appendChild(advEl('div', 'adv-quote', sm.instructions)); }
-        if (sm.checks.length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Pass checks'));
-        for (const c of sm.checks) {
-          const line = advEl('div', 'adv-eval');
-          line.appendChild(advEl('span', 'adv-badge', c.required ? 'REQUIRED' : 'INFO'));
-          line.appendChild(advEl('span', null, c.name + (c.description ? ' — ' + c.description : '')));
-          d.appendChild(line);
+      box.appendChild(advExpandable('sim:' + sm.id, detailFor.title(sm), (d) => detailFor.fill(d, sm), { kind: 'simulation', id: sm.id }, simState[sm.id]));
+    }
+  }
+  function runsBlock(box, ids, emptyText) {
+    box.appendChild(advEl('div', 'prompt-k adv-k', 'Recent runs'));
+    let shown = 0;
+    for (const r of sim.runs ?? []) {
+      const items = (r.items ?? []).filter((it) => ids.has(it.simulationId));
+      const queuedHere = (r.simulationIds ?? []).some((x) => ids.has(x));
+      if (!items.length && !queuedHere) continue;
+      shown++;
+      const head = advEl('div', 'adv-run');
+      const passed = items.filter((it) => it.passed === true).length;
+      const failed = items.filter((it) => it.passed === false).length;
+      head.appendChild(advEl('span', 'adv-run-t', advWhen(r.createdAt) + ' · ' + (r.status ?? '')));
+      head.appendChild(advEl('span', 'adv-run-c', passed + ' passed · ' + failed + ' failed · ' + (items.length || (r.counts?.total ?? 0)) + ' total'));
+      box.appendChild(head);
+      for (const it of items) {
+        const item = advEl('div', 'adv-item');
+        const top = advEl('div', 'adv-item-top');
+        top.appendChild(advBadge(it.passed));
+        top.appendChild(advEl('span', 'adv-item-n', it.scenario.replace(/^Eval · /, '') + (it.personality && !/^Eval · /.test(it.scenario) ? ' · ' + it.personality : '')));
+        if (it.callId) {
+          const v = advEl('span', 'adv-run-btn', '▶ View');
+          v.addEventListener('click', () => openCallViewer(it.callId));
+          top.appendChild(v);
         }
-      }, { kind: 'simulation', id: sm.id }, simState[sm.id]));
-    }
-  }
-  if (!(sim.suites ?? []).length) advEmpty(sb, 'No simulation suite is assigned to this agent yet.');
-  sb.appendChild(advEl('div', 'prompt-k adv-k', 'Recent runs'));
-  if (!(sim.runs ?? []).length) advEmpty(sb, 'No simulation runs for this agent yet.');
-  for (const r of sim.runs ?? []) {
-    const head = advEl('div', 'adv-run');
-    const c = r.counts ?? {};
-    head.appendChild(advEl('span', 'adv-run-t', advWhen(r.createdAt) + ' · ' + (r.status ?? '')));
-    head.appendChild(advEl('span', 'adv-run-c', (c.passed ?? 0) + ' passed · ' + (c.failed ?? 0) + ' failed · ' + (c.total ?? (r.items ?? []).length) + ' total'));
-    sb.appendChild(head);
-    for (const it of r.items ?? []) {
-      const item = advEl('div', 'adv-item');
-      const top = advEl('div', 'adv-item-top');
-      top.appendChild(advBadge(it.passed));
-      top.appendChild(advEl('span', 'adv-item-n', it.scenario + (it.personality ? ' · ' + it.personality : '')));
-      if (it.callId) {
-        const v = advEl('span', 'adv-run-btn', '▶ View');
-        v.addEventListener('click', () => openCallViewer(it.callId));
-        top.appendChild(v);
+        item.appendChild(top);
+        for (const e of it.evaluations ?? []) {
+          const line = advEl('div', 'adv-eval');
+          line.appendChild(advBadge(e.passed));
+          line.appendChild(advEl('span', null, e.name + (e.reasoning ? ' — ' + e.reasoning : '')));
+          item.appendChild(line);
+        }
+        if (it.failureReason) item.appendChild(advEl('div', 'adv-sub', 'Failure: ' + it.failureReason));
+        for (const sg of it.suggestions ?? []) if (sg) item.appendChild(advEl('div', 'adv-sugg', '💡 ' + sg));
+        box.appendChild(item);
       }
-      item.appendChild(top);
-      for (const e of it.evaluations ?? []) {
-        const line = advEl('div', 'adv-eval');
-        line.appendChild(advBadge(e.passed));
-        line.appendChild(advEl('span', null, e.name + (e.reasoning ? ' — ' + e.reasoning : '')));
-        item.appendChild(line);
-      }
-      if (it.failureReason) item.appendChild(advEl('div', 'adv-sub', 'Failure: ' + it.failureReason));
-      for (const s of it.suggestions ?? []) if (s) item.appendChild(advEl('div', 'adv-sugg', '💡 ' + s));
-      sb.appendChild(item);
     }
+    if (!shown) advEmpty(box, emptyText);
   }
+  const checksFill = (d, sm, intro) => {
+    if (intro) intro(d);
+    if (sm.checks.length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Pass checks'));
+    for (const c of sm.checks) {
+      const line = advEl('div', 'adv-eval');
+      line.appendChild(advEl('span', 'adv-badge', c.required ? 'REQUIRED' : 'INFO'));
+      line.appendChild(advEl('span', null, c.name + (c.description ? ' — ' + c.description : '')));
+      d.appendChild(line);
+    }
+  };
+
+  // 1. Simulations (voice)
+  const [simCard, sb] = advCard('Simulations', 'AI callers with different personalities phone this agent (voice) and score the result.');
+  advRow(sb, 'Scenarios', String(simSuites.reduce((n, su) => n + su.simulations.length, 0)));
+  const chips = advEl('div', 'adv-chips');
+  for (const p of sim.personalities ?? []) chips.appendChild(advEl('span', 'adv-chip', p));
+  if ((sim.personalities ?? []).length) { sb.appendChild(advEl('div', 'prompt-k adv-k', 'Tester personalities')); sb.appendChild(chips); }
+  for (const su of simSuites) {
+    suiteBlock(sb, su, 'Suite · ' + su.name + ' · voice', {
+      title: (sm) => sm.name,
+      fill: (d, sm) => checksFill(d, sm, (dd) => {
+        if (sm.personality) advRow(dd, 'Tester personality', sm.personality);
+        if (sm.instructions) { dd.appendChild(advEl('div', 'prompt-k adv-k', 'What the AI caller does')); dd.appendChild(advEl('div', 'adv-quote', sm.instructions)); }
+      }),
+    });
+  }
+  if (!simSuites.length) advEmpty(sb, 'No simulation suite is assigned to this agent yet.');
+  runsBlock(sb, idsOf(simSuites), 'No simulation runs for this agent yet.');
   grid.appendChild(simCard);
 
-  // 2. Evaluations
-  const [evCard, eb] = advCard('Evaluations', 'Scripted conversation checks: the agent must reply as expected at each step.');
-  advRow(eb, 'Eval definitions', String((ev.definitions ?? []).length));
-  for (const e of ev.definitions ?? []) {
-    eb.appendChild(advExpandable('eval:' + e.id, e.name, (d) => {
-      if (e.description) d.appendChild(advEl('div', 'adv-sub', e.description));
-      if ((e.turns ?? []).length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says'));
-      for (const t of e.turns ?? []) d.appendChild(advEl('div', 'adv-quote', '“' + t + '”'));
-      if (e.criterion) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when')); d.appendChild(advEl('div', 'adv-quote', e.criterion)); }
-    }, { kind: 'eval', id: e.id }, evalState[e.id]));
-  }
-  eb.appendChild(advEl('div', 'prompt-k adv-k', 'Recent eval runs'));
-  if (!(ev.runs ?? []).length) advEmpty(eb, 'No eval runs for this agent yet.');
-  for (const r of ev.runs ?? []) {
-    const pass = r.results.length ? r.results.every((s) => s === 'pass') : null;
-    const it = advEl('div', 'adv-item');
-    const top = advEl('div', 'adv-item-top');
-    top.appendChild(advBadge(pass));
-    top.appendChild(advEl('span', 'adv-item-n', (r.name ?? (ev.definitions ?? []).find((x) => x.id === r.evalId)?.name ?? 'Eval run') + ' · ' + advWhen(r.createdAt)));
-    const v = advEl('span', 'adv-run-btn', '▶ View');
-    v.addEventListener('click', () => openEvalViewer(r.id));
-    top.appendChild(v);
-    it.appendChild(top);
-    it.appendChild(advEl('div', 'adv-sub', r.status + (r.endedReason ? ' · ' + r.endedReason : '') + (r.cost != null ? ' · $' + Number(r.cost).toFixed(4) : '')));
-    eb.appendChild(it);
+  // 2. Evaluations (voice): a caller says one scripted line; the spoken reply is judged.
+  const [evCard, eb] = advCard('Evaluations', 'Voice checks: an AI caller phones the agent, says a scripted line, and the spoken reply is judged against a pass criterion.');
+  if (evalSuites.length) {
+    advRow(eb, 'Evaluations', String(evalSuites.reduce((n, su) => n + su.simulations.length, 0)));
+    for (const su of evalSuites) {
+      suiteBlock(eb, su, 'Suite · ' + su.name.replace(/\s*·\s*evaluations.*$/i, '') + ' · voice', {
+        title: (sm) => (sm.scenario ?? sm.name).replace(/^Eval · /, ''),
+        fill: (d, sm) => {
+          const said = (sm.instructions ?? '').match(/say exactly:\s*"([^"]+)"/i);
+          if (said) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says')); d.appendChild(advEl('div', 'adv-quote', '“' + said[1] + '”')); }
+          d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when'));
+          for (const c of sm.checks) d.appendChild(advEl('div', 'adv-quote', (c.description ?? c.name).replace(/^True only if:\s*/i, '')));
+        },
+      });
+    }
+    runsBlock(eb, idsOf(evalSuites), 'No evaluation runs for this agent yet.');
+  } else {
+    // Fallback: chat evals (Vapi's chat.mockConversation) when no voice eval suite exists.
+    advRow(eb, 'Eval definitions (chat)', String((ev.definitions ?? []).length));
+    for (const e of ev.definitions ?? []) {
+      eb.appendChild(advExpandable('eval:' + e.id, e.name, (d) => {
+        if (e.description) d.appendChild(advEl('div', 'adv-sub', e.description));
+        if ((e.turns ?? []).length) d.appendChild(advEl('div', 'prompt-k adv-k', 'Caller says'));
+        for (const t of e.turns ?? []) d.appendChild(advEl('div', 'adv-quote', '“' + t + '”'));
+        if (e.criterion) { d.appendChild(advEl('div', 'prompt-k adv-k', 'Passes when')); d.appendChild(advEl('div', 'adv-quote', e.criterion)); }
+      }, { kind: 'eval', id: e.id }, evalState[e.id]));
+    }
+    eb.appendChild(advEl('div', 'prompt-k adv-k', 'Recent eval runs'));
+    if (!(ev.runs ?? []).length) advEmpty(eb, 'No eval runs for this agent yet.');
+    for (const r of ev.runs ?? []) {
+      const pass = r.results.length ? r.results.every((x) => x === 'pass') : null;
+      const it = advEl('div', 'adv-item');
+      const top = advEl('div', 'adv-item-top');
+      top.appendChild(advBadge(pass));
+      top.appendChild(advEl('span', 'adv-item-n', (r.name ?? (ev.definitions ?? []).find((x) => x.id === r.evalId)?.name ?? 'Eval run') + ' · ' + advWhen(r.createdAt)));
+      const v = advEl('span', 'adv-run-btn', '▶ View');
+      v.addEventListener('click', () => openEvalViewer(r.id));
+      top.appendChild(v);
+      it.appendChild(top);
+      it.appendChild(advEl('div', 'adv-sub', r.status + (r.endedReason ? ' · ' + r.endedReason : '') + (r.cost != null ? ' · $' + Number(r.cost).toFixed(4) : '')));
+      eb.appendChild(it);
+    }
   }
   grid.appendChild(evCard);
 

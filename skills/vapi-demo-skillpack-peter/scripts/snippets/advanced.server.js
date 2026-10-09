@@ -22,11 +22,11 @@ async function advancedHandler(res) {
   const forThis = (t) => t && (t.assistantId === aid || t.assistant?.id === aid);
   const [scenarios, simulations, personalities, runsAll, evals, evalRunsAll, suitesAll, soAll, lastCalls] = await Promise.all([
     get('/eval/simulation/scenario?limit=100'), get('/eval/simulation?limit=100'),
-    get('/eval/simulation/personality?limit=100'), get('/eval/simulation/run?limit=25'),
+    get('/eval/simulation/personality?limit=100'), get('/eval/simulation/run?limit=50'),
     get('/eval?limit=100'), get('/eval/run?limit=25'), get('/eval/simulation/suite?limit=100'),
     get('/structured-output?limit=100'), get(`/call?assistantId=${aid}&limit=1`),
   ]);
-  const runs = (runsAll ?? []).filter((r) => forThis(r.target)).slice(0, 5);
+  const runs = (runsAll ?? []).filter((r) => forThis(r.target)).slice(0, 10);
   const runItems = await Promise.all(runs.map((r) => get(`/eval/simulation/run/${r.id}/item?limit=50`)));
   const scenarioName = Object.fromEntries((scenarios ?? []).map((s) => [s.id, s.name]));
   const personalityName = Object.fromEntries((personalities ?? []).map((p) => [p.id, p.name]));

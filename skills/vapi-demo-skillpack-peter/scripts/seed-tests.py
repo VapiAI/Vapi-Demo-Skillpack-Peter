@@ -18,7 +18,12 @@ Spec (JSON):
     {"name": "...", "description": "...",
      "turns": ["user message", ...],                                  # user lines; the agent replies after the last
      "judge": "PASS only if the assistant's last reply ..."}           # LLM-as-judge criterion
-  ]
+  ],
+  "evalMode": "voice",            # default. Vapi evals are chat-only, so in voice mode each
+                                  # eval becomes a VOICE simulation: an AI caller says the
+                                  # scripted line(s) and the spoken reply is scored against
+                                  # `judge`. Suite: "<suiteName> · evaluations". "chat" = old behaviour.
+  "evalPersonality": "Decisive Derek"   # built-in tester that follows the script plainly
 }
 
 Usage:
@@ -103,7 +108,43 @@ def main():
         created['suite'] = spec['suiteName']
 
     eval_ids = []
-    for ev in spec.get('evals', []):
+    eval_suite_id = None
+    if spec.get('evalMode', 'voice') == 'voice' and spec.get('evals'):
+        epers = spec.get('evalPersonality', 'Decisive Derek')
+        if epers not in personalities:
+            sys.exit(f'unknown evalPersonality {epers!r}; available: {sorted(personalities)}')
+        esim_ids = []
+        for ev in spec['evals']:
+            sname = 'Eval · ' + ev['name']
+            lines = ' Then, after the agent answers, say exactly: '.join(f'"{t}"' for t in ev['turns'])
+            instructions = (f'You are a caller running a quick check. After the agent greets you, say exactly: {lines}. '
+                            'Do not add anything else or change the wording. Listen to the full answer, say '
+                            '"Okay, thank you, goodbye," and end the call.')
+            crit = ev['judge'].replace("the assistant's last reply", "the agent's reply to the scripted question")
+            if sname in scenarios:
+                sid = scenarios[sname]
+            else:
+                sid = call('POST', '/eval/simulation/scenario', {
+                    'name': sname, 'instructions': instructions,
+                    'evaluations': [{'structuredOutput': {'name': 'passes_' + ''.join(ch if ch.isalnum() else '_' for ch in ev['name'].lower()).strip('_')[:31],  # Vapi caps output names at 40 chars
+                                                          'type': 'ai', 'schema': {'type': 'boolean', 'description': 'True only if: ' + crit}},
+                                     'comparator': '=', 'value': True, 'required': True}],
+                })['id']
+                created['scenarios'].append(sname)
+            if sname in simulations:
+                esim_ids.append(simulations[sname])
+            else:
+                esim_ids.append(call('POST', '/eval/simulation', {'name': sname, 'scenarioId': sid, 'personalityId': personalities[epers]})['id'])
+                created['simulations'].append(sname)
+        ename = spec['suiteName'] + ' · evaluations'
+        body = {'simulationIds': esim_ids, 'targetAssignments': [{'targetType': 'assistant', 'targetId': aid}]}
+        if ename in suites:
+            eval_suite_id = suites[ename]
+            call('PATCH', f'/eval/simulation/suite/{eval_suite_id}', body)
+        else:
+            eval_suite_id = call('POST', '/eval/simulation/suite', {'name': ename, **body})['id']
+            created['evalSuite'] = ename
+    for ev in (spec.get('evals', []) if spec.get('evalMode', 'voice') == 'chat' else []):
         if ev['name'] in evals:
             eval_ids.append(evals[ev['name']])
             continue
@@ -117,7 +158,7 @@ def main():
                                                'description': ev.get('description', ''), 'messages': msgs})['id'])
         created['evals'].append(ev['name'])
 
-    result = {'suiteId': suite_id, 'simulationIds': sim_ids, 'evalIds': eval_ids, 'created': created}
+    result = {'suiteId': suite_id, 'simulationIds': sim_ids, 'evalSuiteId': eval_suite_id, 'evalIds': eval_ids, 'created': created}
     print(json.dumps(result, indent=2))
     if out_path:
         json.dump(result, open(out_path, 'w'), indent=2)
