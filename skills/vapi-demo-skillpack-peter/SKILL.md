@@ -226,9 +226,11 @@ this file wins** — these are Peter's explicit corrections.
   `cache-control: no-cache`, and the SSE stream sends the server's boot id
   (`server.version`) on connect, so a tab that reconnects after a deploy
   reloads. Before this, an open tab kept showing the old dashboard.
-- **Call viewer tool lane:** markers within ~10% of the timeline share one
-  label ("name ×3", times in the tooltip); labels in the last quarter anchor
-  leftwards. Separate labels overlapped into unreadable text.
+- **Call viewer tool lane:** one marker per lookup — repeats of the same tool
+  within ~8 s (pre-fetch refined from "heat" to "code 16") show once, when it
+  first fired; never "×2". Each marker has its own label; a label that would
+  overlap the previous one drops to a second row; labels in the last quarter
+  anchor leftwards.
 - **Vapi tool PATCH drops fields you don't send.** `PATCH /tool/:id
   {"async":true}` wiped `server`, so the call went to the assistant webhook and
   the lookup never ran (the agent then answered "per the manual" ungrounded).

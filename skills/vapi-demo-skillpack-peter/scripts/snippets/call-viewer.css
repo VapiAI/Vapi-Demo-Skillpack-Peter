@@ -24,6 +24,7 @@
 .cv-lane.tools .cv-bar { width: 2px; background: #e5484d; top: 4px; height: 26px; }
 .cv-tool-lbl { position: absolute; top: 0; transform: translateX(4px); font-size: 10.5px; color: #e5484d; white-space: nowrap; }
 .cv-tool-lbl.end { transform: translateX(calc(-100% - 4px)); }
+.cv-tool-lbl.row2 { top: 14px; }
 .cv-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #111013; left: 210px; pointer-events: none; }
 .cv-playlbl { position: absolute; bottom: -2px; left: 4px; background: #111013; color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 999px; font-variant-numeric: tabular-nums; }
 .cv-axis { display: flex; justify-content: space-between; margin-left: 210px; padding-top: 6px; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }

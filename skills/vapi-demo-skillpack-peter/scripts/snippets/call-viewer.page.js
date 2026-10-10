@@ -76,6 +76,10 @@ async function openCallViewer(callId, opts = {}) {
 
   // Lanes: talk share per speaker, silence = time nobody is speaking.
   const D = Math.max(d.duration || 0, ...d.segments.map((s) => s.start + s.dur), 1);
+  // One marker per lookup: repeats of the same tool a few seconds apart (e.g. a
+  // pre-fetch refined from "heat" to "code 16") show once, when it first fired.
+  d.tools = [...d.tools].sort((a, b) => a.at - b.at).filter((t, i, all) =>
+    !all.slice(0, i).some((p) => p.name === t.name && t.at - p.at < 8));
   // Speaking periods: measured from the stereo recording when the server has
   // them (d.lanes), otherwise the transcript messages' own timings.
   const spans = d.lanes ?? {
@@ -116,25 +120,22 @@ async function openCallViewer(callId, opts = {}) {
     row.appendChild(area);
     track.appendChild(row);
   }
-  // One label per cluster of nearby markers (they overlapped into garbage text):
-  // markers within ~10% of the timeline share a label like "name ×3"; the
-  // tooltip lists each one with its time. Labels near the end anchor leftwards.
+  // One label per marker. A label that would run into the previous one on its
+  // row drops to a second row; labels near the end anchor leftwards.
   const toolArea = track.querySelector('.cv-lane.tools .cv-area');
-  const groups = [];
-  for (const t of [...d.tools].sort((a, b) => a.at - b.at)) {
-    const g = groups[groups.length - 1];
-    if (g && (t.at - g.items[g.items.length - 1].at) / D < 0.1) g.items.push(t); else groups.push({ items: [t] });
-  }
-  for (const g of groups) {
-    const names = [...new Set(g.items.map((t) => t.name))];
-    const text = names.length === 1 ? names[0] + (g.items.length > 1 ? ' ×' + g.items.length : '') : names[0] + ' +' + (g.items.length - 1);
-    const lbl = advEl('span', 'cv-tool-lbl', text);
-    // Label starts after the LAST bar of the group (or ends before the first,
-    // near the right edge) so no bar cuts through the text.
-    const first = g.items[0].at / D, last = g.items[g.items.length - 1].at / D;
-    if (first > 0.75) { lbl.style.left = first * 100 + '%'; lbl.classList.add('end'); }
-    else lbl.style.left = last * 100 + '%';
-    lbl.title = g.items.map((t) => cvFmt(t.at) + '  ' + t.name).join('\n');
+  const laneW = toolArea.getBoundingClientRect().width || 900;
+  const rowEnd = [-1, -1]; // right edge (px) of the last label on each row
+  for (const t of d.tools) {
+    const lbl = advEl('span', 'cv-tool-lbl', t.name);
+    lbl.title = cvFmt(t.at) + '  ' + t.name;
+    const x = (t.at / D) * laneW, w = t.name.length * 6.2 + 8;
+    const end = x / laneW > 0.75;
+    const left = end ? x - w : x, right = end ? x : x + w;
+    const row = left > rowEnd[0] ? 0 : (left > rowEnd[1] ? 1 : 1);
+    rowEnd[row] = Math.max(rowEnd[row], right);
+    lbl.style.left = (t.at / D) * 100 + '%';
+    if (end) lbl.classList.add('end');
+    if (row) lbl.classList.add('row2');
     toolArea.appendChild(lbl);
   }
   const head = advEl('div', 'cv-playhead');
