@@ -124,12 +124,21 @@ this file wins** — these are Peter's explicit corrections.
 - **"Monitoring & Structured Outputs" tab + webhook DB** (Peter's ask):
   structured outputs card (moved off Simulations & Test), this agent's Vapi
   monitors + issues (`GET /monitoring/monitor`, `/monitoring/issue` — not in
-  the public API spec but live), and **Stored webhooks** from a Postgres table
-  `webhook_events` (id, received_at, source 'end-of-call-report'|'monitor',
-  event_type, call_id, assistant_id, is_simulation, payload jsonb). Every
-  end-of-call report on `/vapi` is stored (simulations flagged); monitor
-  notifiers post to `POST /webhooks/monitor?token=<WEBHOOK_TOKEN>` (401
-  without it). Setup per demo:
+  the public API spec but live), and three Postgres tables (Peter's ask —
+  separate tables, one database):
+  - `end_of_call_reports`: one row per call (call_id unique, type,
+    is_simulation, started/ended, duration, ended_reason, cost, summary,
+    transcript, recording_url, full payload) from every end-of-call report.
+  - `monitors_webhook_events`: monitor alerts (and other webhooks) from
+    `POST /webhooks/monitor?token=<WEBHOOK_TOKEN>` (401
+  without it).
+  - `structured_output_results`: one row per call per structured output
+    (unique call_id + structured_output_id; name, result jsonb). Taken from
+    the end-of-call report if present, else re-read from `GET /call/:id`
+    20 s and 60 s after the call (extraction can finish after the report).
+  The tab shows End-of-call logs, Monitor webhooks and Stored structured
+  outputs cards. A Vapi monitor also creates its OWN structured output +
+  insight, so its result is stored too. Setup per demo:
       railway add --database postgres
       railway variables --set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
                         --set "WEBHOOK_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(24))')"

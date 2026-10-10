@@ -15,11 +15,17 @@ def must(s, a):
     if a not in s:
         raise SystemExit(f'monitoring patch: anchor not found: {a[:80]!r}')
 
+def resync(s, start_marker, end_marker, snippet):
+    # Already-patched project: replace the old snippet block with the current one.
+    a = s.index(start_marker)
+    b = s.index(end_marker, a)
+    return s[:a] + snippet.strip() + '\n\n' + s[b:]
+
 def patch_page(s):
     s = s.replace('<button class="tab-btn" data-tab="advanced" role="tab">Advanced</button>',
                   '<button class="tab-btn" data-tab="advanced" role="tab">Simulations &amp; Test</button>')
     if 'id="monsoGrid"' in s:
-        return s
+        return resync(s, '// ---- Monitoring & Structured Outputs tab', 'function tabShow(name) {', snip('monitoring.page.js'))
     a = '  <button class="tab-btn" data-tab="logs" role="tab">Logs</button>\n'
     must(s, a)
     s = s.replace(a, a + '  <button class="tab-btn" data-tab="monso" role="tab">Monitoring &amp; Structured Outputs</button>\n', 1)
@@ -46,7 +52,7 @@ def patch_page(s):
 
 def patch_server(s):
     if 'async function monitoringHandler' in s:
-        return s
+        return resync(s, '// ---- Webhook store (Postgres)', '\n// ---- Static + routing', snip('monitoring.server.js'))
     a = '\n// ---- Static + routing'
     must(s, a)
     s = s.replace(a, snip('monitoring.server.js') + a, 1)
@@ -71,8 +77,8 @@ def patch_package(project):
 def apply(project):
     pp, sp = os.path.join(project, 'public', 'index.html'), os.path.join(project, 'server.mjs')
     page, srv = patch_page(open(pp).read()), patch_server(open(sp).read())
-    marks = ['data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
-    smarks = ['async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
+    marks = ["'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
+    smarks = ['CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
     missing = [m for m in marks if m not in page] + [m for m in smarks if m not in srv]
     if missing or "advRenderSO(data, $('advGrid'))" in page:
         raise SystemExit(f'monitoring patch FAILED, missing: {missing}')

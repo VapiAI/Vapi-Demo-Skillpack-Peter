@@ -46,21 +46,59 @@ function monsoRender(d, grid) {
   grid.appendChild(mc);
 
   const st = d.stored ?? {};
-  const [wc, wb] = advCard('Stored webhooks', 'End-of-call reports and monitor alerts, saved to the database table webhook_events.');
-  advRow(wb, 'Database', st.enabled ? (st.total != null ? st.total + ' events stored' : 'connected') : 'not connected (set DATABASE_URL)');
-  if (st.enabled && !(d.events ?? []).length) advEmpty(wb, 'No webhooks stored yet. They appear after the next call ends or a monitor fires.');
+  // End-of-call logs (table end_of_call_reports): one row per call.
+  const [lc, lb] = advCard('End-of-call logs', 'One row per call from the end-of-call report, saved to the database table end_of_call_reports.');
+  advRow(lb, 'Calls stored', st.enabled ? String(st.logTotal ?? 0) : 'not connected (set DATABASE_URL)');
+  if (st.enabled && !(d.callLogs ?? []).length) advEmpty(lb, 'No calls stored yet. They appear when the next call ends.');
+  for (const c of d.callLogs ?? []) {
+    const it = advEl('div', 'adv-item');
+    const top = advEl('div', 'adv-item-top');
+    top.appendChild(advEl('span', 'tkb-type', c.is_simulation ? 'Simulation' : (c.call_type || 'call').replace(/Call$/, '').replace(/^webCall$/, 'web')));
+    top.appendChild(advEl('span', 'adv-item-n', (c.ended_reason || 'ended').replace(/-/g, ' ')));
+    const dur = c.duration_seconds != null ? Math.round(Number(c.duration_seconds)) + 's' : null;
+    top.appendChild(advEl('span', 'tkb-use', [advWhen(c.ended_at || c.received_at), dur, c.cost != null ? '$' + Number(c.cost).toFixed(4) : null].filter(Boolean).join(' · ')));
+    it.appendChild(top);
+    it.appendChild(advEl('div', 'tkb-meta', 'Call ' + c.call_id));
+    if (c.summary) it.appendChild(advEl('div', 'tkb-desc', c.summary));
+    lb.appendChild(it);
+  }
+  grid.appendChild(lc);
+
+  // Webhooks (table monitors_webhook_events): monitor alerts and other webhooks.
+  const [wc, wb] = advCard('Monitor webhooks', 'Monitor alerts sent to this demo, saved to the database table monitors_webhook_events.');
+  advRow(wb, 'Webhooks stored', st.enabled ? String(st.total ?? 0) : 'not connected (set DATABASE_URL)');
+  if (st.enabled && !(d.events ?? []).length) advEmpty(wb, 'No webhooks stored yet. They appear when a monitor alert is sent here.');
   for (const e of d.events ?? []) {
     const it = advEl('div', 'adv-item');
     const top = advEl('div', 'adv-item-top');
-    top.appendChild(advEl('span', 'tkb-type' + (e.source === 'monitor' ? ' query' : ''), e.source === 'monitor' ? 'Monitor' : 'End of call'));
-    top.appendChild(advEl('span', 'adv-item-n', e.source === 'monitor'
-      ? [e.severity ? e.severity.toUpperCase() : null, e.title || e.event_type].filter(Boolean).join(' · ')
-      : (e.ended_reason || e.event_type || 'call ended').replace(/-/g, ' ')));
-    top.appendChild(advEl('span', 'tkb-use', advWhen(e.received_at) + (e.is_simulation ? ' · simulation' : '')));
+    top.appendChild(advEl('span', 'tkb-type query', e.source === 'monitor' ? 'Monitor' : e.source));
+    top.appendChild(advEl('span', 'adv-item-n', [e.severity ? e.severity.toUpperCase() : null, e.title || e.event_type].filter(Boolean).join(' · ')));
+    top.appendChild(advEl('span', 'tkb-use', advWhen(e.received_at)));
     it.appendChild(top);
     if (e.call_id) it.appendChild(advEl('div', 'tkb-meta', 'Call ' + e.call_id));
-    if (e.summary) it.appendChild(advEl('div', 'tkb-desc', e.summary));
     wb.appendChild(it);
   }
   grid.appendChild(wc);
+
+  // Structured output results (their own table), grouped by call.
+  const [sc, sb2] = advCard('Stored structured outputs', 'Every structured output result, per call, saved to the database table structured_output_results.');
+  advRow(sb2, 'Rows stored', st.enabled ? String(st.soTotal ?? 0) : 'not connected (set DATABASE_URL)');
+  const byCall = new Map();
+  for (const r of d.structuredOutputResults ?? []) { if (!byCall.has(r.call_id)) byCall.set(r.call_id, []); byCall.get(r.call_id).push(r); }
+  if (st.enabled && !byCall.size) advEmpty(sb2, 'No results stored yet. They appear shortly after the next call ends.');
+  for (const [callId, rows] of [...byCall].slice(0, 8)) {
+    const it = advEl('div', 'adv-item');
+    const top = advEl('div', 'adv-item-top');
+    top.appendChild(advEl('span', 'adv-item-n', 'Call ' + callId.slice(0, 8)));
+    top.appendChild(advEl('span', 'tkb-use', advWhen(rows[0].received_at) + (rows[0].is_simulation ? ' · simulation' : '')));
+    it.appendChild(top);
+    const chips = advEl('div', 'tkb-chips');
+    for (const r of rows) {
+      const v = typeof r.result === 'object' ? JSON.stringify(r.result) : String(r.result);
+      chips.appendChild(advEl('span', 'tkb-chip' + (r.result === true ? ' req' : ''), r.name + ': ' + v));
+    }
+    it.appendChild(chips);
+    sb2.appendChild(it);
+  }
+  grid.appendChild(sc);
 }
