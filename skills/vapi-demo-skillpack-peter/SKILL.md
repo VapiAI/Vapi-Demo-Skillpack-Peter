@@ -416,6 +416,15 @@ build it before the dashboard:
    injected lookup result with "Reply rule: give only the NEXT single step
    (~25 words), then wait" (the template does). Result: agent turns ≤28 words,
    8 short caller turns in 60 s.
+   **Don't repeat things back** (Peter, agent + skill): every prompt says no
+   recaps, no echoing the caller's words, no "just to confirm" of what they
+   already said; go straight to the answer / next step / one question. Also
+   don't put caller details in example lines (an example "pull up the manual
+   for your J three thirty-five" taught the model to repeat the model number).
+   Only exception: read a callback number back once before creating a case.
+   **The agent may have been edited in the Vapi dashboard**: before patching
+   a prompt, GET the live assistant and build on it (check `updatedAt`); if it
+   differs from the local copy, ask before overwriting.
 7. Defaults that worked: OpenAI `gpt-4.1`, Deepgram `nova-3`, Cartesia
    `sonic-3.5` voice reused from an existing assistant in the org.
 8. Build the body with python `json.dumps` from a prompt file (no shell
