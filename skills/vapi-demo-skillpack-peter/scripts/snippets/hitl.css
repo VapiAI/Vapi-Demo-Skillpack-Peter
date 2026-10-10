@@ -1,0 +1,6 @@
+/* Human in the Loop */
+#transcript .tool-log.hitl-flag { border-color: #fdba74; background: #fff7ed; }
+.adv-item.hitl-open { border-color: #fdba74; }
+.tkb-type.hitl-st-open { border-color: #f97316; color: #9a3412; }
+.tkb-chip.hitl-term { border-color: #f97316; color: #9a3412; background: #fff7ed; }
+.hitl-re { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.5; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-bg); overflow-wrap: anywhere; }

@@ -6,6 +6,8 @@ const DBT_ABOUT = {
   end_of_call_reports: 'One row per call, from the end-of-call report.',
   monitors_webhook_events: 'Monitor alerts sent to this demo (POST /webhooks/monitor).',
   structured_output_results: 'One row per call per structured output.',
+  transcripts: 'Every final transcript line (caller and agent), from the transcript webhook.',
+  human_in_the_loop: 'Calls flagged by the swear-word / anger regex on the caller\'s words.',
 };
 async function dbtLoad() {
   const grid = $('dbtGrid');

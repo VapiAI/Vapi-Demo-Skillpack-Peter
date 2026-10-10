@@ -2,7 +2,7 @@
 // ---- Call DB & Tables tab -----------------------------------------------------------
 // GET /db-tables: for each demo table, its columns (information_schema), row
 // count and latest rows. Long text / JSON is shortened so the page stays light.
-const DB_TABLES = ['end_of_call_reports', 'monitors_webhook_events', 'structured_output_results'];
+const DB_TABLES = ['end_of_call_reports', 'transcripts', 'human_in_the_loop', 'monitors_webhook_events', 'structured_output_results'];
 let dbTablesCache = null;
 async function dbTablesHandler(res) {
   const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };

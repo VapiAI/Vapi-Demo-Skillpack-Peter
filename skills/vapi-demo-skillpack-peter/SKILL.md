@@ -235,6 +235,21 @@ this file wins** — these are Peter's explicit corrections.
   longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
   tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
   + ONE question, no recap" in the prompt.
+- **Human in the Loop** (7th tab, Peter's ask) + two more tables:
+  - `transcripts`: every FINAL transcript line (caller + agent) from the
+    `transcript` webhook (partials skipped: they get revised).
+  - `human_in_the_loop`: one row per flagged call (unique call_id): matched
+    terms, count, first/last matching line, status open|handled.
+  A regex runs on the caller's FINAL lines only (agent lines never) —
+  default: idiot, stupid, dummy, moron, f*ck…, sh*t…, damn, crap, a**hole,
+  b*tch, "shut up", "screw you", useless, worst, ridiculous, "hate this/you",
+  "fed up"… (override with `HITL_REGEX`). First match on a call → row +
+  outbound POST to `HITL_WEBHOOK_URL` (if set) + live transcript entry
+  "Human in the loop · call flagged" (SSE `hitl.flag`, real calls only).
+  Tab lists flagged calls with matched words, the line, and "Mark handled"
+  (`POST /hitl/handled`). Not built: automatic takeover (controlUrl `say` +
+  `transfer`) — needs a human transfer number; add when asked. Both tables
+  also show on Call DB & Tables.
 - **Structured outputs + monitor alerts show in the transcript** (Peter's
   ask). Vapi computes them AFTER the call (outputs ~5–60 s after hang-up,
   monitors on their schedule), so they're added under that call's transcript

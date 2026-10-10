@@ -99,6 +99,54 @@ def patch_page_postcall(s):
     s = s.replace(a, a + "    if (call.structuredOutputs) postCallStructured({ callId: call.callId, outputs: call.structuredOutputs });\n", 1)
     return s
 
+def patch_page_hitl(s):
+    # "Human in the Loop" tab + live transcript flag.
+    if 'id="hitlGrid"' in s:
+        s = resync(s, '// ---- Human in the Loop tab + live flag', '// ---- end hitl', snip('hitl.page.js').replace('// ---- end hitl', '').rstrip())
+        a = s.index('/* Human in the Loop */'); b = s.index('.hitl-re {', a); b = s.index('\n', b) + 1
+        return s[:a] + snip('hitl.css').strip() + '\n' + s[b:]
+    a = '  <button class="tab-btn" data-tab="dbt" role="tab">Call DB &amp; Tables</button>\n'
+    must(s, a)
+    s = s.replace(a, a + '  <button class="tab-btn" data-tab="hitl" role="tab">Human in the Loop</button>\n', 1)
+    a = '<section class="logs" id="logs" hidden>'
+    must(s, a)
+    s = s.replace(a, '<section class="advanced" id="hitl" hidden>\n  <div class="adv-grid" id="hitlGrid"></div>\n</section>\n\n' + a, 1)
+    a = "  if ($('dbt')) $('dbt').hidden = name !== 'dbt';\n"
+    must(s, a)
+    s = s.replace(a, a + "  if ($('hitl')) $('hitl').hidden = name !== 'hitl';\n", 1)
+    a = "  if (typeof dbtTimer !== 'undefined') clearInterval(dbtTimer);\n"
+    must(s, a)
+    s = s.replace(a, a + "  if (typeof hitlTimer !== 'undefined') clearInterval(hitlTimer);\n", 1)
+    a = "  if (name === 'dbt' && typeof dbtLoad === 'function') { dbtLoad(); dbtTimer = setInterval(dbtLoad, 30000); }\n"
+    must(s, a)
+    s = s.replace(a, a + "  if (name === 'hitl' && typeof hitlLoad === 'function') { hitlLoad(); hitlTimer = setInterval(hitlLoad, 10000); }\n", 1)
+    a = '// ---- Call DB & Tables tab'
+    must(s, a)
+    s = s.replace(a, snip('hitl.page.js').strip() + '\n\n' + a, 1)
+    a = '</style>'
+    must(s, a)
+    s = s.replace(a, snip('hitl.css').strip() + '\n' + a, 1)
+    a = "    case 'call.structured':\n"
+    must(s, a)
+    s = s.replace(a, "    case 'hitl.flag':\n      hitlFlagShow(d);\n      break;\n" + a, 1)
+    return s
+
+def patch_server_hitl(s):
+    if 'function hitlOnTranscript' in s:
+        return resync(s, '// ---- Human in the loop (transcripts + regex watcher)', '\n// ---- Static + routing', snip('hitl.server.js'))
+    a = '\n// ---- Static + routing'
+    must(s, a)
+    s = s.replace(a, snip('hitl.server.js') + a, 1)
+    if "req.url.startsWith('/hitl/')" not in s:
+        a = "  if (req.method === 'GET' && req.url === '/monitoring') return monitoringHandler(res);"
+        must(s, a)
+        s = s.replace(a, a + "\n  if (req.url === '/hitl' || req.url.startsWith('/hitl/')) return hitlHandler(req, res);", 1)
+    if 'hitlOnTranscript(message);' not in s:
+        a = "  if (message?.type === 'transcript') prefetchFromTranscript(" if "prefetchFromTranscript(" in s else "  storeEndOfCall(message);"
+        must(s, a)
+        s = s.replace(a, "  hitlOnTranscript(message);  // transcripts table + swear/anger regex → human_in_the_loop\n" + a, 1)
+    return s
+
 def patch_server_dbt(s):
     if 'async function dbTablesHandler' in s:
         return resync(s, '// ---- Call DB & Tables tab', '\n// ---- Static + routing', snip('db-tables.server.js'))
@@ -137,9 +185,10 @@ def patch_package(project):
 
 def apply(project):
     pp, sp = os.path.join(project, 'public', 'index.html'), os.path.join(project, 'server.mjs')
-    page, srv = patch_page_postcall(patch_page_dbt(patch_page(open(pp).read()))), patch_server_dbt(patch_server(open(sp).read()))
-    marks = ['function postCallStructured', "case 'call.structured':", 'postCallStructured({ callId: call.callId', '.pc-chip.hit {', 'data-tab="dbt"', 'id="dbtGrid"', 'async function dbtLoad', '.dbt-wrap {', "'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
-    smarks = ["emitEvent('call.structured'", "emitEvent('call.monitor'", 'async function dbTablesHandler', "req.url === '/db-tables'", 'CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
+    page = patch_page_hitl(patch_page_postcall(patch_page_dbt(patch_page(open(pp).read()))))
+    srv = patch_server_hitl(patch_server_dbt(patch_server(open(sp).read())))
+    marks = ['data-tab="hitl"', 'id="hitlGrid"', 'async function hitlLoad', "case 'hitl.flag':", '.hitl-re {', 'function postCallStructured', "case 'call.structured':", 'postCallStructured({ callId: call.callId', '.pc-chip.hit {', 'data-tab="dbt"', 'id="dbtGrid"', 'async function dbtLoad', '.dbt-wrap {', "'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
+    smarks = ['function hitlOnTranscript', 'hitlOnTranscript(message);', "req.url.startsWith('/hitl/')", 'CREATE TABLE IF NOT EXISTS human_in_the_loop', "emitEvent('call.structured'", "emitEvent('call.monitor'", 'async function dbTablesHandler', "req.url === '/db-tables'", 'CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
     missing = [m for m in marks if m not in page] + [m for m in smarks if m not in srv]
     if missing or "advRenderSO(data, $('advGrid'))" in page:
         raise SystemExit(f'monitoring patch FAILED, missing: {missing}')
