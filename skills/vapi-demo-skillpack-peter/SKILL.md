@@ -96,7 +96,7 @@ this file wins** — these are Peter's explicit corrections.
   ALWAYS pass the customer's domain with `--domain <domain>` (repeatable) so
   spelled-out speech like "e money u s a dot com" displays as "emoneyusa.com".
 
-- **In-line 2nd page "Simulations & Test"** (renamed from "Advanced"; tabs: Live | Simulations & Test | Logs | Monitoring & Structured Outputs | Tools & Knowledge Base)
+- **In-line 2nd page "Simulations & Test"** (renamed from "Advanced"; tabs: Agent (was "Live") | Simulations & Test | Logs | Monitoring & Structured Outputs | Tools & Knowledge Base | Call DB & Tables)
   showing Simulations, Evaluations and **Structured outputs** for this agent
   (Peter trimmed the latency/cost/analysis cards — don't add them back
   unasked). Structured outputs = every `/structured-output` whose
@@ -114,7 +114,7 @@ this file wins** — these are Peter's explicit corrections.
   `/scenario`, `/personality`, `/suite`, `/run` + `/run/{id}/item`) and Evals
   (`/eval`, `/eval/run`), filtered to suites/runs targeting ASSISTANT_ID,
   cached 15s; the page refreshes every 30s while the tab is open.
-- **3rd in-line tab "Logs"** (tabs: Live | Advanced | Logs): call log for
+- **3rd in-line tab "Logs"** (tabs: Agent | Simulations & Test | Logs): call log for
   this agent, newest first, from `GET /logs` (→ `/call?assistantId=…&limit=25`,
   cached 10s): time, type chip (web/inbound), duration, ended reason, turns ·
   tools, cost, first caller line, structured-output chips. Click a row →
