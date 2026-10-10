@@ -695,6 +695,8 @@ def main():
     tool_log_patch.apply(a.project_dir)
     import end_call_patch
     end_call_patch.apply(a.project_dir)
+    import monitoring_patch
+    monitoring_patch.apply(a.project_dir)
     print('ok: all default edits applied and verified')
 
 

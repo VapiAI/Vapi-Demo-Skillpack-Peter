@@ -96,7 +96,7 @@ this file wins** — these are Peter's explicit corrections.
   ALWAYS pass the customer's domain with `--domain <domain>` (repeatable) so
   spelled-out speech like "e money u s a dot com" displays as "emoneyusa.com".
 
-- **In-line 2nd page "Advanced" (tabs under the header: Live | Advanced)**
+- **In-line 2nd page "Simulations & Test"** (renamed from "Advanced"; tabs: Live | Simulations & Test | Logs | Monitoring & Structured Outputs | Tools & Knowledge Base)
   showing Simulations, Evaluations and **Structured outputs** for this agent
   (Peter trimmed the latency/cost/analysis cards — don't add them back
   unasked). Structured outputs = every `/structured-output` whose
@@ -121,6 +121,24 @@ this file wins** — these are Peter's explicit corrections.
   `GET /logs?id=<callId>` → turn-by-turn transcript with inline tool calls
   (same `historyTurns()` + `displayText()` as the live board). Refreshes
   every 30s while open.
+- **"Monitoring & Structured Outputs" tab + webhook DB** (Peter's ask):
+  structured outputs card (moved off Simulations & Test), this agent's Vapi
+  monitors + issues (`GET /monitoring/monitor`, `/monitoring/issue` — not in
+  the public API spec but live), and **Stored webhooks** from a Postgres table
+  `webhook_events` (id, received_at, source 'end-of-call-report'|'monitor',
+  event_type, call_id, assistant_id, is_simulation, payload jsonb). Every
+  end-of-call report on `/vapi` is stored (simulations flagged); monitor
+  notifiers post to `POST /webhooks/monitor?token=<WEBHOOK_TOKEN>` (401
+  without it). Setup per demo:
+      railway add --database postgres
+      railway variables --set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' \
+                        --set "WEBHOOK_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(24))')"
+  `monitoring_patch.py` (run by apply-defaults) adds the tab, the routes and
+  `pg` to package.json; add `node_modules/` to `.railwayignore`. Without
+  DATABASE_URL nothing is stored and nothing breaks. Vapi monitors themselves
+  (Monitoring → Monitors) are created in the dashboard: Effectiveness type =
+  a true/false question; threshold "result is True ≥ N calls in window" →
+  severity + notifiers (point a webhook notifier at the URL above).
 - **4th in-line tab "Tools & Knowledge Base"** (tabs: Live | Advanced | Logs |
   Tools & Knowledge Base). Peter's ask: show the tools ACTIVE on the agent,
   not just tools that happen to be used on a live call. `GET /tools-kb` reads
