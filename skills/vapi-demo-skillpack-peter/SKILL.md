@@ -226,6 +226,13 @@ this file wins** — these are Peter's explicit corrections.
   `cache-control: no-cache`, and the SSE stream sends the server's boot id
   (`server.version`) on connect, so a tab that reconnects after a deploy
   reloads. Before this, an open tab kept showing the old dashboard.
+- **Endpointing timings: keep Vapi's defaults** (Peter, agent + skill):
+  `startSpeakingPlan: {waitSeconds: 0, transcriptionEndpointingPlan:
+  {onPunctuationSeconds: 0.1, onNoPunctuationSeconds: 1.5, onNumberSeconds:
+  0.5}}`. NEVER set all three to 0 with smart endpointing off: endpointing
+  dropped to ~10 ms and the agent answered half-sentences ("I'm calling about
+  the J" → "Is it the J-three hundred collection?"), 3 interruptions in one
+  call. Wait 0 is fine on its own.
 - **Call viewer tool lane:** one marker per lookup — repeats of the same tool
   within ~8 s (pre-fetch refined from "heat" to "code 16") show once, when it
   first fired; never "×2". Each marker has its own label; a label that would
