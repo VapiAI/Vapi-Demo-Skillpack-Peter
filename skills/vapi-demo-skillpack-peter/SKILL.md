@@ -235,6 +235,13 @@ this file wins** — these are Peter's explicit corrections.
   longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
   tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
   + ONE question, no recap" in the prompt.
+- **Structured outputs + monitor alerts show in the transcript** (Peter's
+  ask). Vapi computes them AFTER the call (outputs ~5–60 s after hang-up,
+  monitors on their schedule), so they're added under that call's transcript
+  as a "Structured outputs · POST-CALL" event-log entry (true values
+  highlighted) — live via SSE `call.structured` (sent once per real call, from
+  the report or the 20 s / 60 s re-read) and `call.monitor` (monitor webhook
+  with a callId), and for the last call from `/last-call` structuredOutputs.
 - **⋮ menu in the header, right of Reset** (Peter's ask): dropdown with
   "Go to" (every tab, current one highlighted) and actions "Open agent in
   Vapi" (dashboard.vapi.ai/assistants/<id>, id from `/agent-prompt`) and "Copy

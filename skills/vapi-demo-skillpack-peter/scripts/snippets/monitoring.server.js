@@ -116,11 +116,22 @@ async function upsertStructuredOutputs(call, outputs, isSimulation) {
   }
   return entries.length;
 }
+// Post-call results also go to the live board (event 'call.structured'), once
+// per call, for real calls only — the transcript shows them under the call.
+const soAnnounced = new Set();
+function announceStructuredOutputs(call, outputs, sim) {
+  const list = Object.values(outputs ?? {}).map((v) => ({ name: v?.name ?? 'output', result: v?.result ?? v ?? null }));
+  if (!list.length || sim || soAnnounced.has(call.id)) return;
+  soAnnounced.add(call.id);
+  if (soAnnounced.size > 500) soAnnounced.delete(soAnnounced.values().next().value);
+  emitEvent('call.structured', { callId: call.id, outputs: list });
+}
 function storeStructuredOutputs(message) {
   const call = { ...(message.call ?? {}), assistantId: message.assistant?.id ?? message.call?.assistantId, endedAt: message.endedAt ?? message.call?.endedAt };
-  if (!call.id || !process.env.DATABASE_URL) return;
+  if (!call.id) return;
   const sim = isTestCall(message.call);
   const fromReport = message.artifact?.structuredOutputs ?? message.call?.artifact?.structuredOutputs;
+  announceStructuredOutputs(call, fromReport, sim);
   upsertStructuredOutputs(call, fromReport, sim).catch((err) => console.error('[db] so store failed', err.message));
   const key = process.env.VAPI_API_KEY ?? process.env.VAPI_PRIVATE_KEY;
   if (!key) return;
@@ -129,6 +140,7 @@ function storeStructuredOutputs(message) {
       const r = await fetch(`https://api.vapi.ai/call/${call.id}`, { headers: { authorization: `Bearer ${key}` } });
       if (!r.ok) return;
       const c = await r.json();
+      announceStructuredOutputs(call, c.artifact?.structuredOutputs, sim);
       const n = await upsertStructuredOutputs({ ...call, endedAt: c.endedAt ?? call.endedAt }, c.artifact?.structuredOutputs, sim);
       if (n) console.log(`[db] ${n} structured outputs stored for ${call.id} (+${delay / 1000}s)`);
     } catch (err) { console.error('[db] so refetch failed', err.message); }
@@ -144,8 +156,12 @@ async function monitorWebhookHandler(req, res) {
   for await (const chunk of req) { body += chunk; if (body.length > 2e6) return send(413, { error: 'too large' }); }
   let j; try { j = JSON.parse(body || '{}'); } catch { return send(400, { error: 'bad json' }); }
   const m = j.message ?? j;
+  const callId = m.callId ?? m.call?.id ?? null;
   storeEvent({ source: 'monitor', eventType: m.type ?? m.event ?? m.severity ?? 'monitor',
-    callId: m.callId ?? m.call?.id ?? null, assistantId: m.assistantId ?? m.call?.assistantId ?? null, payload: j });
+    callId, assistantId: m.assistantId ?? m.call?.assistantId ?? null, payload: j });
+  // A monitor alert about a specific call also shows in that call's transcript.
+  if (callId) emitEvent('call.monitor', { callId, title: m.name ?? m.monitor?.name ?? m.title ?? 'Monitor alert',
+    severity: m.severity ?? m.issue?.severity ?? null, detail: m.description ?? m.message ?? null });
   send(200, { ok: true });
 }
 

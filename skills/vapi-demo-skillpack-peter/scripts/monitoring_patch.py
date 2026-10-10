@@ -54,7 +54,7 @@ def patch_page_dbt(s):
     # "Call DB & Tables" tab: the Postgres tables (columns, row count, latest rows).
     if 'id="dbtGrid"' in s:
         s = resync(s, '// ---- Call DB & Tables tab', '// ---- Monitoring & Structured Outputs tab', snip('db-tables.page.js'))
-        a = s.index('/* Call DB & Tables tab */'); b = s.index('</style>', a)
+        a = s.index('/* Call DB & Tables tab */'); b = s.index('.dbt tr:last-child td', a); b = s.index('\n', b) + 1
         return s[:a] + snip('db-tables.css').strip() + '\n' + s[b:]
     a = '  <button class="tab-btn" data-tab="toolskb" role="tab">Tools &amp; Knowledge Base</button>\n'
     must(s, a)
@@ -77,6 +77,26 @@ def patch_page_dbt(s):
     a = '</style>'
     must(s, a)
     s = s.replace(a, snip('db-tables.css').strip() + '\n' + a, 1)
+    return s
+
+def patch_page_postcall(s):
+    # Post-call results (structured outputs, monitor alerts) in the transcript.
+    if '// ---- Post-call results in the transcript' in s:
+        s = resync(s, '// ---- Post-call results in the transcript', '// ---- end post-call', snip('postcall.page.js').replace('// ---- end post-call', '').rstrip())
+        a = s.index('/* Post-call results in the transcript */'); b = s.index('.pc-chip.hit {', a); b = s.index('\n', b) + 1
+        return s[:a] + snip('postcall.css').strip() + '\n' + s[b:]
+    a = '// ---- Call DB & Tables tab'
+    must(s, a)
+    s = s.replace(a, snip('postcall.page.js').strip() + '\n\n' + a, 1)
+    a = '</style>'
+    must(s, a)
+    s = s.replace(a, snip('postcall.css').strip() + '\n' + a, 1)
+    a = "    case 'tool.completed':\n"
+    must(s, a)
+    s = s.replace(a, "    case 'call.structured':\n      postCallStructured(d);\n      break;\n    case 'call.monitor':\n      postCallMonitor(d);\n      break;\n" + a, 1)
+    a = "    if (call.turns.length) transcriptHistoryRender(call.turns);\n"
+    must(s, a)
+    s = s.replace(a, a + "    if (call.structuredOutputs) postCallStructured({ callId: call.callId, outputs: call.structuredOutputs });\n", 1)
     return s
 
 def patch_server_dbt(s):
@@ -117,9 +137,9 @@ def patch_package(project):
 
 def apply(project):
     pp, sp = os.path.join(project, 'public', 'index.html'), os.path.join(project, 'server.mjs')
-    page, srv = patch_page_dbt(patch_page(open(pp).read())), patch_server_dbt(patch_server(open(sp).read()))
-    marks = ['data-tab="dbt"', 'id="dbtGrid"', 'async function dbtLoad', '.dbt-wrap {', "'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
-    smarks = ['async function dbTablesHandler', "req.url === '/db-tables'", 'CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
+    page, srv = patch_page_postcall(patch_page_dbt(patch_page(open(pp).read()))), patch_server_dbt(patch_server(open(sp).read()))
+    marks = ['function postCallStructured', "case 'call.structured':", 'postCallStructured({ callId: call.callId', '.pc-chip.hit {', 'data-tab="dbt"', 'id="dbtGrid"', 'async function dbtLoad', '.dbt-wrap {', "'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
+    smarks = ["emitEvent('call.structured'", "emitEvent('call.monitor'", 'async function dbTablesHandler', "req.url === '/db-tables'", 'CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
     missing = [m for m in marks if m not in page] + [m for m in smarks if m not in srv]
     if missing or "advRenderSO(data, $('advGrid'))" in page:
         raise SystemExit(f'monitoring patch FAILED, missing: {missing}')

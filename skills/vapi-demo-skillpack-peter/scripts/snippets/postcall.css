@@ -1,0 +1,6 @@
+/* Post-call results in the transcript */
+.tool-log .tl-chip.alert { color: #9a3412; background: #ffedd5; border-color: #fdba74; }
+.tool-log.post-call { border-style: dashed; }
+.pc-chips { flex-direction: row !important; flex-wrap: wrap; gap: 6px !important; }
+.pc-chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: #fff; }
+.pc-chip.hit { border-color: #f97316; color: #9a3412; background: #fff7ed; font-weight: 600; }
