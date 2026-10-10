@@ -235,6 +235,10 @@ this file wins** — these are Peter's explicit corrections.
   longer triggers a slow lookup, so speed wins. Other fixes that stay: lookup
   tool `async: true` (no 1.2 s wait on "lookup_started"); "one short sentence
   + ONE question, no recap" in the prompt.
+- **⋮ menu in the header, right of Reset** (Peter's ask): dropdown with
+  "Go to" (every tab, current one highlighted) and actions "Open agent in
+  Vapi" (dashboard.vapi.ai/assistants/<id>, id from `/agent-prompt`) and "Copy
+  call ID". Closes on outside click / Esc. `scripts/nav_menu_patch.py`.
 - **Red "End call" button next to Talk to the agent** (Peter's ask), shown
   whenever a call is live on the board. A web call started from the page hangs
   up in the browser; any other live call of this agent (phone, another tab)

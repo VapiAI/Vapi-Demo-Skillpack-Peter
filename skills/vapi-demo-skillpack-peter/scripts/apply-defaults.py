@@ -697,6 +697,8 @@ def main():
     end_call_patch.apply(a.project_dir)
     import monitoring_patch
     monitoring_patch.apply(a.project_dir)
+    import nav_menu_patch
+    nav_menu_patch.apply(a.project_dir)
     print('ok: all default edits applied and verified')
 
 
