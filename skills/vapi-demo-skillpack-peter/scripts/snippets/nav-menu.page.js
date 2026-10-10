@@ -1,7 +1,8 @@
 
 // ---- ⋮ menu (header, right of Reset) -----------------------------------------------
-// Dropdown with the page's tabs (navigation) and quick actions: open this agent
-// in the Vapi dashboard, copy the current call ID. Closes on outside click / Esc.
+// Dropdown with the pages that are NOT in the tab row (buttons with class
+// tab-menu-only: Logs, Call DB & Tables) and quick actions: open this agent in
+// the Vapi dashboard, copy the current call ID. Closes on outside click / Esc.
 (() => {
   const btn = document.getElementById('navMenuBtn');
   const menu = document.getElementById('navMenu');
@@ -25,8 +26,8 @@
   };
   const build = () => {
     menu.innerHTML = '';
-    menu.appendChild(Object.assign(document.createElement('div'), { className: 'nav-head', textContent: 'Go to' }));
-    for (const t of document.querySelectorAll('.tab-btn')) {
+    menu.appendChild(Object.assign(document.createElement('div'), { className: 'nav-head', textContent: 'Pages' }));
+    for (const t of document.querySelectorAll('.tab-btn.tab-menu-only')) {
       const it = item(t.textContent.trim(), ICON.tab, () => tabShow(t.dataset.tab));
       if (t.classList.contains('on')) it.classList.add('on');
       menu.appendChild(it);

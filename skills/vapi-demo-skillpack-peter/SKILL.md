@@ -257,9 +257,13 @@ this file wins** — these are Peter's explicit corrections.
   highlighted) — live via SSE `call.structured` (sent once per real call, from
   the report or the 20 s / 60 s re-read) and `call.monitor` (monitor webhook
   with a callId), and for the last call from `/last-call` structuredOutputs.
-- **⋮ menu in the header, right of Reset** (Peter's ask): dropdown with
-  "Go to" (every tab, current one highlighted) and actions "Open agent in
-  Vapi" (dashboard.vapi.ai/assistants/<id>, id from `/agent-prompt`) and "Copy
+- **⋮ menu in the header, right of Reset** (Peter's ask). Tab row = Agent ·
+  Simulations & Test · Monitoring & Structured Outputs · Tools & Knowledge
+  Base · Human in the Loop. **Logs and Call DB & Tables are menu-only** (their
+  buttons have class `tab-menu-only`, hidden from the row) and the menu lists
+  ONLY those pages under "Pages" — never the in-row tabs — then actions "Open
+  agent in Vapi" (dashboard.vapi.ai/assistants/<id>, id from `/agent-prompt`)
+  and "Copy
   call ID". Closes on outside click / Esc. `scripts/nav_menu_patch.py`.
   Re-sync blocks must end at their OWN last rule, never at `</style>` — a
   DB-tables CSS re-sync up to `</style>` silently wiped the menu's CSS and
