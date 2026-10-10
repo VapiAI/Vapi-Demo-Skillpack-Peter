@@ -625,7 +625,7 @@ def main():
     # ---- In-line 2nd page: "Advanced" (simulations + evaluations) ----------
     page.rep('</header>\n',
              '</header>\n\n<nav class="tabs" role="tablist">\n'
-             '  <button class="tab-btn on" data-tab="live" role="tab">Live</button>\n'
+             '  <button class="tab-btn on" data-tab="live" role="tab">Agent</button>\n'
              '  <button class="tab-btn" data-tab="advanced" role="tab">Advanced</button>\n'
              '  <button class="tab-btn" data-tab="logs" role="tab">Logs</button>\n'
              '  <button class="tab-btn" data-tab="toolskb" role="tab">Tools &amp; Knowledge Base</button>\n'
