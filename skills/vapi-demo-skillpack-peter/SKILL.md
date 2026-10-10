@@ -136,7 +136,7 @@ this file wins** — these are Peter's explicit corrections.
     (unique call_id + structured_output_id; name, result jsonb). Taken from
     the end-of-call report if present, else re-read from `GET /call/:id`
     20 s and 60 s after the call (extraction can finish after the report).
-  **"Call DB & Tables" tab** (6th tab, Peter's ask): one card per table with
+  **"Call DB & Tables" page** (NOT in the tab row — opened only from the ⋮ menu; its button has class `tab-menu-only`, Peter's ask): one card per table with
   its columns + types (information_schema), row count and the latest 20 rows
   as a scrollable grid (`GET /db-tables`, long text/JSON shortened). Grid
   column must be `minmax(0, 1fr)` or the wide table stretches the card off
@@ -261,6 +261,10 @@ this file wins** — these are Peter's explicit corrections.
   "Go to" (every tab, current one highlighted) and actions "Open agent in
   Vapi" (dashboard.vapi.ai/assistants/<id>, id from `/agent-prompt`) and "Copy
   call ID". Closes on outside click / Esc. `scripts/nav_menu_patch.py`.
+  Re-sync blocks must end at their OWN last rule, never at `</style>` — a
+  DB-tables CSS re-sync up to `</style>` silently wiped the menu's CSS and
+  the dropdown rendered as giant unstyled buttons. monitoring_patch now fails
+  if the menu exists without `.nav-menu {`; nav_menu_patch re-adds missing CSS.
 - **Red "End call" button next to Talk to the agent** (Peter's ask), shown
   whenever a call is live on the board. A web call started from the page hangs
   up in the browser; any other live call of this agent (phone, another tab)

@@ -21,8 +21,11 @@ def patch_page(s):
     if 'id="navMenuBtn"' in s:
         a = s.index('// ---- ⋮ menu (header, right of Reset)'); b = s.index('})();', a) + 5
         s = s[:a] + snip('nav-menu.page.js').strip() + s[b:]
-        a = s.index('/* ⋮ menu in the header */'); b = s.index('.nav-sep {', a); b = s.index('\n', b) + 1
-        return s[:a] + snip('nav-menu.css').strip() + '\n' + s[b:]
+        if '/* ⋮ menu in the header */' in s:
+            a = s.index('/* ⋮ menu in the header */'); b = s.index('.nav-sep {', a); b = s.index('\n', b) + 1
+            return s[:a] + snip('nav-menu.css').strip() + '\n' + s[b:]
+        # Styles missing (an older re-sync wiped them): add them back.
+        return s.replace('</style>', snip('nav-menu.css').strip() + '\n</style>', 1)
     a = '    Reset\n  </button>\n</header>'
     must(s, a)
     s = s.replace(a, '    Reset\n  </button>' + BTN + '\n</header>', 1)

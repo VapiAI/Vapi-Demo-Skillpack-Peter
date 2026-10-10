@@ -1,4 +1,5 @@
 /* Call DB & Tables tab */
+.tab-btn.tab-menu-only { display: none; }
 #dbtGrid { grid-template-columns: minmax(0, 1fr); }
 .dbt-card { min-width: 0; }
 .dbt-card .body { min-width: 0; }
