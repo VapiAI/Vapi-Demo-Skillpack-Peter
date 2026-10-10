@@ -107,7 +107,7 @@ def patch_page_hitl(s):
         s = resync(s, '// ---- Human in the Loop tab + live flag', '// ---- end hitl', snip('hitl.page.js').replace('// ---- end hitl', '').rstrip())
         a = s.index('/* Human in the Loop */'); b = s.index('.hitl-re {', a); b = s.index('\n', b) + 1
         return s[:a] + snip('hitl.css').strip() + '\n' + s[b:]
-    a = '  <button class="tab-btn" data-tab="dbt" role="tab">Call DB &amp; Tables</button>\n'
+    a = '  <button class="tab-btn" data-tab="toolskb" role="tab">Tools &amp; Knowledge Base</button>\n'
     must(s, a)
     s = s.replace(a, a + '  <button class="tab-btn" data-tab="hitl" role="tab">Human in the Loop</button>\n', 1)
     a = '<section class="logs" id="logs" hidden>'
