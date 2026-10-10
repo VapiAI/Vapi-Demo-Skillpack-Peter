@@ -136,6 +136,11 @@ this file wins** — these are Peter's explicit corrections.
     (unique call_id + structured_output_id; name, result jsonb). Taken from
     the end-of-call report if present, else re-read from `GET /call/:id`
     20 s and 60 s after the call (extraction can finish after the report).
+  **"Call DB & Tables" tab** (6th tab, Peter's ask): one card per table with
+  its columns + types (information_schema), row count and the latest 20 rows
+  as a scrollable grid (`GET /db-tables`, long text/JSON shortened). Grid
+  column must be `minmax(0, 1fr)` or the wide table stretches the card off
+  screen.
   The tab shows End-of-call logs, Monitor webhooks and Stored structured
   outputs cards. A Vapi monitor also creates its OWN structured output +
   insight, so its result is stored too. Setup per demo:

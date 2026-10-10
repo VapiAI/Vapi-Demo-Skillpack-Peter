@@ -50,6 +50,47 @@ def patch_page(s):
     s = s.replace(a, snip('monitoring.page.js').strip() + '\n\n' + a, 1)
     return s
 
+def patch_page_dbt(s):
+    # "Call DB & Tables" tab: the Postgres tables (columns, row count, latest rows).
+    if 'id="dbtGrid"' in s:
+        s = resync(s, '// ---- Call DB & Tables tab', '// ---- Monitoring & Structured Outputs tab', snip('db-tables.page.js'))
+        a = s.index('/* Call DB & Tables tab */'); b = s.index('</style>', a)
+        return s[:a] + snip('db-tables.css').strip() + '\n' + s[b:]
+    a = '  <button class="tab-btn" data-tab="toolskb" role="tab">Tools &amp; Knowledge Base</button>\n'
+    must(s, a)
+    s = s.replace(a, a + '  <button class="tab-btn" data-tab="dbt" role="tab">Call DB &amp; Tables</button>\n', 1)
+    a = '<section class="logs" id="logs" hidden>'
+    must(s, a)
+    s = s.replace(a, '<section class="advanced" id="dbt" hidden>\n  <div class="adv-grid" id="dbtGrid"></div>\n</section>\n\n' + a, 1)
+    a = "  if ($('monso')) $('monso').hidden = name !== 'monso';\n"
+    must(s, a)
+    s = s.replace(a, a + "  if ($('dbt')) $('dbt').hidden = name !== 'dbt';\n", 1)
+    a = "  if (typeof monsoTimer !== 'undefined') clearInterval(monsoTimer);\n"
+    must(s, a)
+    s = s.replace(a, a + "  if (typeof dbtTimer !== 'undefined') clearInterval(dbtTimer);\n", 1)
+    a = "  if (name === 'monso' && typeof monsoLoad === 'function') { monsoLoad(); monsoTimer = setInterval(monsoLoad, 30000); }\n"
+    must(s, a)
+    s = s.replace(a, a + "  if (name === 'dbt' && typeof dbtLoad === 'function') { dbtLoad(); dbtTimer = setInterval(dbtLoad, 30000); }\n", 1)
+    a = '// ---- Monitoring & Structured Outputs tab'
+    must(s, a)
+    s = s.replace(a, snip('db-tables.page.js').strip() + '\n\n' + a, 1)
+    a = '</style>'
+    must(s, a)
+    s = s.replace(a, snip('db-tables.css').strip() + '\n' + a, 1)
+    return s
+
+def patch_server_dbt(s):
+    if 'async function dbTablesHandler' in s:
+        return resync(s, '// ---- Call DB & Tables tab', '\n// ---- Static + routing', snip('db-tables.server.js'))
+    a = '\n// ---- Static + routing'
+    must(s, a)
+    s = s.replace(a, snip('db-tables.server.js') + a, 1)
+    if "req.url === '/db-tables'" not in s:
+        a = "  if (req.method === 'GET' && req.url === '/monitoring') return monitoringHandler(res);"
+        must(s, a)
+        s = s.replace(a, a + "\n  if (req.method === 'GET' && req.url === '/db-tables') return dbTablesHandler(res);", 1)
+    return s
+
 def patch_server(s):
     if 'async function monitoringHandler' in s:
         return resync(s, '// ---- Webhook store (Postgres)', '\n// ---- Static + routing', snip('monitoring.server.js'))
@@ -76,9 +117,9 @@ def patch_package(project):
 
 def apply(project):
     pp, sp = os.path.join(project, 'public', 'index.html'), os.path.join(project, 'server.mjs')
-    page, srv = patch_page(open(pp).read()), patch_server(open(sp).read())
-    marks = ["'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
-    smarks = ['CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
+    page, srv = patch_page_dbt(patch_page(open(pp).read())), patch_server_dbt(patch_server(open(sp).read()))
+    marks = ['data-tab="dbt"', 'id="dbtGrid"', 'async function dbtLoad', '.dbt-wrap {', "'End-of-call logs'", "'Stored structured outputs'", 'data-tab="monso"', 'id="monsoGrid"', 'function monsoLoad', 'Simulations &amp; Test']
+    smarks = ['async function dbTablesHandler', "req.url === '/db-tables'", 'CREATE TABLE IF NOT EXISTS end_of_call_reports', 'async function storeCallLog', 'CREATE TABLE IF NOT EXISTS structured_output_results', 'function storeStructuredOutputs', 'async function monitoringHandler', 'async function monitorWebhookHandler', 'storeEndOfCall(message);', "req.url === '/monitoring'"]
     missing = [m for m in marks if m not in page] + [m for m in smarks if m not in srv]
     if missing or "advRenderSO(data, $('advGrid'))" in page:
         raise SystemExit(f'monitoring patch FAILED, missing: {missing}')

@@ -1,0 +1,10 @@
+/* Call DB & Tables tab */
+#dbtGrid { grid-template-columns: minmax(0, 1fr); }
+.dbt-card { min-width: 0; }
+.dbt-card .body { min-width: 0; }
+.dbt-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.dbt { border-collapse: collapse; width: 100%; font-size: 12px; }
+.dbt th, .dbt td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.dbt th { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; background: var(--panel-bg); position: sticky; top: 0; }
+.dbt td { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); }
+.dbt tr:last-child td { border-bottom: none; }
